@@ -1,10 +1,5 @@
 import mongoose from 'mongoose';
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -25,7 +20,7 @@ async function dbConnect() {
   const MONGODB_URI = process.env.MONGODB_URI;
 
   if (!MONGODB_URI) {
-    throw new Error('Please define the MONGODB_URI environment variable inside Azure Portal Configuration or .env.local');
+    throw new Error('Please define the MONGODB_URI environment variable');
   }
 
   if (cached!.conn) {
@@ -33,11 +28,20 @@ async function dbConnect() {
   }
 
   if (!cached!.promise) {
+    // Opsi khusus untuk Azure Cosmos DB for MongoDB agar lebih stabil
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 10000, // 10 detik
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      // Cosmos DB memerlukan SSL/TLS
+      tls: true,
+      minPoolSize: 1,
+      maxPoolSize: 10,
     };
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log("[MongoDB] Connected to Cosmos DB");
       return mongoose;
     });
   }
@@ -46,6 +50,7 @@ async function dbConnect() {
     cached!.conn = await cached!.promise;
   } catch (e) {
     cached!.promise = null;
+    console.error("[MongoDB] Connection Error:", e);
     throw e;
   }
 
