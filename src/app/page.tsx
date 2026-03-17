@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -10,9 +12,12 @@ export default function Home() {
           <a href="#" className="hover:text-blue-600 transition-colors">Writing</a>
           <a href="#" className="hover:text-blue-600 transition-colors">Speaking</a>
         </div>
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg">
-          Get Started
-        </button>
+        <div className="flex items-center space-x-4">
+          <Link href="/auth/login" className="font-semibold text-gray-700 hover:text-blue-600 transition-colors">Login</Link>
+          <Link href="/auth/signup" className="bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg">
+            Get Started
+          </Link>
+        </div>
       </nav>
 
       {/* Hero Section */}
