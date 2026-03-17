@@ -23,7 +23,11 @@ export async function POST(request: Request) {
     console.error('Chat API error:', error);
     return NextResponse.json({ 
       success: false, 
-      message: 'Failed to get a response from the tutor.',
+      message: 'Deployment Not Found or Configuration Error.',
+      debug: {
+        deploymentUsed: deploymentName,
+        errorType: error.code || error.name
+      },
       error: error.message 
     }, { status: 500 });
   }
