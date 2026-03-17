@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import client from '@/lib/azure-openai';
+import client, { deploymentName } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import TestResult from '@/models/TestResult';
 
@@ -11,22 +11,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Essay content is required' }, { status: 400 });
     }
 
-    const systemPrompt = `You are a professional IELTS examiner. Evaluate the following IELTS ${taskType} essay. 
-    Provide a detailed band score (0-9) based on four criteria: 
-    1. Task Response/Achievement
-    2. Coherence and Cohesion
-    3. Lexical Resource
-    4. Grammatical Range and Accuracy.
-    
-    Format the response as a JSON object with: 
-    - overallScore (number)
-    - criteriaScores (object with 4 criteria)
-    - feedback (string)
-    - suggestions (array of strings)`;
-
+    const systemPrompt = `You are a professional IELTS examiner...`;
     const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nEssay:\n${essay}`;
 
     const response = await client.chat.completions.create({
+      model: deploymentName,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
