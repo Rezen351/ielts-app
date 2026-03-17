@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
+import { Globe, ArrowRight } from "lucide-react"
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -26,13 +27,13 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Login successful!", {
-          description: "Redirecting to your dashboard...",
+        toast.success("Login successful", {
+          description: "Redirecting to dashboard",
         });
         localStorage.setItem('user', JSON.stringify(data.user));
         setTimeout(() => {
           window.location.href = '/dashboard';
-        }, 1500);
+        }, 1000);
       } else {
         toast.error("Login failed", {
           description: data.message || "Invalid credentials.",
@@ -48,18 +49,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 px-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
-          <CardDescription>
-            Enter your email to sign in to your account
-          </CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50/50 px-4">
+      <Card className="w-full max-w-md shadow-2xl shadow-slate-200/50 border-slate-100 rounded-[32px] overflow-hidden">
+        <CardHeader className="space-y-4 text-center pt-12">
+          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+            <Globe className="w-6 h-6 text-white" />
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</CardTitle>
+            <CardDescription className="text-slate-500 font-medium">
+              Continue your journey to Band 8.5
+            </CardDescription>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-8 pb-8">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email Address</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -67,14 +73,14 @@ export default function LoginPage() {
                 required 
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="rounded-lg"
+                className="rounded-xl border-slate-200 h-12 focus-visible:ring-blue-600"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-sm text-blue-600 hover:underline">
-                  Forgot password?
+                <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Password</Label>
+                <Link href="#" className="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-widest">
+                  Reset
                 </Link>
               </div>
               <Input 
@@ -83,18 +89,19 @@ export default function LoginPage() {
                 required 
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="rounded-lg"
+                className="rounded-xl border-slate-200 h-12 focus-visible:ring-blue-600"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button className="w-full font-bold bg-blue-600 hover:bg-blue-700 rounded-lg py-6" type="submit" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+          <CardFooter className="flex flex-col space-y-6 px-8 pb-12">
+            <Button className="w-full font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 flex items-center gap-2 group" type="submit" disabled={loading}>
+              {loading ? "Authenticating..." : "Sign In"}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <div className="text-center text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Link href="/auth/signup" className="text-blue-600 font-medium hover:underline">
-                Sign up
+            <div className="text-center">
+              <span className="text-xs text-slate-400 font-medium">No account? </span>
+              <Link href="/auth/signup" className="text-xs text-blue-600 font-bold hover:underline">
+                Create one now
               </Link>
             </div>
           </CardFooter>
