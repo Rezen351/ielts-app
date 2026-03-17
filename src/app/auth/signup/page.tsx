@@ -2,16 +2,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "sonner"
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ text: '', type: '' });
 
     try {
       const response = await fetch('/api/auth/signup', {
@@ -23,88 +26,87 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ text: 'Account created! Redirecting to login...', type: 'success' });
+        toast.success("Account created!", {
+          description: "Welcome to IELTS Master. Redirecting to login...",
+        });
         setTimeout(() => {
           window.location.href = '/auth/login';
         }, 2000);
       } else {
-        setMessage({ text: data.message || data.error || 'Signup failed', type: 'error' });
+        toast.error("Signup failed", {
+          description: data.message || data.error || "Please check your information.",
+        });
       }
     } catch (err) {
-      setMessage({ text: 'Something went wrong. Please try again.', type: 'error' });
+      toast.error("Error", {
+        description: "Something went wrong. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-2xl shadow-xl">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Create Account</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in
-            </Link>
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4 rounded-md shadow-sm">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Full Name</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                placeholder="John Doe"
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50 px-4">
+      <Card className="w-full max-w-md shadow-lg border-0">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
+          <CardDescription>
+            Enter your information to get started with IELTS Master
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                type="text" 
+                placeholder="John Doe" 
+                required 
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                placeholder="you@example.com"
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="name@example.com" 
+                required 
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <input
-                type="password"
-                required
-                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                placeholder="•••••••• (min 6 chars)"
-                minLength={6}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                required 
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="rounded-lg"
               />
+              <p className="text-xs text-gray-500">Must be at least 6 characters long.</p>
             </div>
-          </div>
-
-          {message.text && (
-            <div className={`p-3 rounded-lg text-sm text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {message.text}
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button className="w-full font-bold bg-blue-600 hover:bg-blue-700 rounded-lg py-6" type="submit" disabled={loading}>
+              {loading ? "Creating account..." : "Sign Up"}
+            </Button>
+            <div className="text-center text-sm text-gray-500">
+              Already have an account?{" "}
+              <Link href="/auth/login" className="text-blue-600 font-medium hover:underline">
+                Sign in
+              </Link>
             </div>
-          )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
-          </div>
+          </CardFooter>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
