@@ -19,7 +19,8 @@ import {
   Trophy,
   Zap,
   Bot,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -39,6 +40,7 @@ export default function DashboardPage() {
 
   const sidebarLinks = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", active: true },
+    { label: "Study Chat", icon: MessageSquare, href: "/dashboard/chat" },
     { label: "Listening", icon: Headphones, href: "/dashboard/listening" },
     { label: "Reading", icon: BookOpen, href: "/dashboard/reading" },
     { label: "Writing", icon: PenTool, href: "/dashboard/writing" },
