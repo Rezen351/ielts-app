@@ -4,6 +4,7 @@ export interface IUser extends mongoose.Document {
   name: string;
   email: string;
   password: string;
+  nativeLanguage: string;
   createdAt: Date;
 }
 
@@ -24,7 +25,11 @@ const UserSchema = new mongoose.Schema<IUser>({
     type: String,
     required: [true, 'Please provide a password.'],
     minlength: [6, 'Password should be at least 6 characters long.'],
-    select: false, // Don't return password by default
+    select: false,
+  },
+  nativeLanguage: {
+    type: String,
+    default: 'id', // Default to Indonesia
   },
   createdAt: {
     type: Date,

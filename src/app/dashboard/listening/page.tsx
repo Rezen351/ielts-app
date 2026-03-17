@@ -15,7 +15,8 @@ import {
   Pause,
   CheckCircle2, 
   Clock,
-  Volume2
+  Volume2,
+  Loader2
 } from 'lucide-react';
 
 export default function ListeningPage() {
@@ -24,19 +25,42 @@ export default function ListeningPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-
-  const questions = [
-    { id: 1, text: "What time does the library close on Saturdays?", options: ["A) 5:00 PM", "B) 6:00 PM", "C) 8:00 PM", "D) 9:00 PM"], correct: "B) 6:00 PM" },
-    { id: 2, text: "What is the main topic of the conversation?", options: ["A) Booking a flight", "B) Renting a car", "C) Joining a sports club", "D) Ordering food"], correct: "C) Joining a sports club" },
-    { id: 3, text: "How much is the monthly membership fee?", options: ["A) $20", "B) $25", "C) $30", "D) $45"], correct: "B) $25" }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    if (timeLeft > 0 && !submitted) {
+    fetchNewContent();
+  }, []);
+
+  const fetchNewContent = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/generate/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: 'Listening',
+          topic: 'University Campus Life',
+          difficulty: 'Medium'
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+      }
+    } catch (err) {
+      toast.error("Failed to load content");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (timeLeft > 0 && !submitted && !loading) {
       const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
       return () => clearInterval(timer);
     }
-  }, [timeLeft, submitted]);
+  }, [timeLeft, submitted, loading]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -44,15 +68,43 @@ export default function ListeningPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitted(true);
     let correctCount = 0;
-    questions.forEach(q => {
+    data.questions.forEach((q: any) => {
       if (answers[q.id] === q.correct) correctCount++;
     });
     setScore(correctCount);
+    
+    // Save to DB
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      await fetch('/api/user/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          module: 'Listening',
+          topic: 'University Campus Life',
+          score: (correctCount / data.questions.length) * 9,
+          maxScore: 9,
+          data: { answers }
+        }),
+      });
+    }
+    
     toast.success("Listening Test Complete");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generating Audio Experience...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
@@ -78,16 +130,15 @@ export default function ListeningPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
-        {/* Audio Player Card */}
         <Card className="border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-slate-900 text-white p-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="w-24 h-24 bg-blue-600 rounded-[24px] flex items-center justify-center shadow-2xl shadow-blue-500/20">
               <Volume2 className="w-10 h-10 text-white" />
             </div>
             <div className="flex-1 text-center md:text-left space-y-2">
-              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">Section 1</Badge>
+              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">DYNAMIC SECTION 1</Badge>
               <h2 className="text-2xl font-bold">Social Needs Conversation</h2>
-              <p className="text-slate-400 text-sm font-medium">Click play to start the audio. You will only hear it once.</p>
+              <p className="text-slate-400 text-sm font-medium">Click play to listen to the AI-generated script.</p>
             </div>
             <Button 
               size="lg" 
@@ -98,24 +149,19 @@ export default function ListeningPage() {
             </Button>
           </div>
           
-          {/* Progress Bar */}
-          <div className="mt-8 space-y-2">
-            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 w-1/3 transition-all duration-1000"></div>
+          {isPlaying && (
+            <div className="mt-8 p-6 bg-slate-800/50 rounded-2xl border border-slate-700 animate-in fade-in zoom-in-95 duration-500">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Transcript (For Practice Only)</p>
+              <p className="text-sm text-slate-300 leading-relaxed italic">"{data?.script}"</p>
             </div>
-            <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              <span>04:12</span>
-              <span>12:45</span>
-            </div>
-          </div>
+          )}
         </Card>
 
-        {/* Questions Area */}
         <div className="space-y-6 pb-20">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 px-2">Questions 1-3</h3>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 px-2">Questions</h3>
           
-          {questions.map((q) => (
-            <Card key={q.id} className={`border-slate-200 shadow-none rounded-3xl overflow-hidden transition-all ${submitted && (answers[q.id] === q.correct ? 'border-emerald-200 bg-emerald-50/30' : 'border-red-200 bg-red-50/30')}`}>
+          {data?.questions.map((q: any) => (
+            <Card key={q.id} className={`border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white transition-all ${submitted && (answers[q.id] === q.correct ? 'border-emerald-200 bg-emerald-50/30' : 'border-red-200 bg-red-50/30')}`}>
               <CardHeader className="p-8 pb-4">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xs shrink-0">
@@ -130,7 +176,7 @@ export default function ListeningPage() {
                   onValueChange={(val) => setAnswers({...answers, [q.id]: val})}
                   disabled={submitted}
                 >
-                  {q.options.map((opt) => (
+                  {q.options.map((opt: string) => (
                     <div key={opt} className="flex items-center space-x-3 space-y-2">
                       <RadioGroupItem value={opt} id={`q${q.id}-${opt}`} className="text-blue-600 border-slate-300" />
                       <Label htmlFor={`q${q.id}-${opt}`} className={`text-sm font-medium ${submitted && opt === q.correct ? 'text-emerald-700 font-bold' : 'text-slate-600'}`}>
@@ -144,14 +190,11 @@ export default function ListeningPage() {
           ))}
 
           {submitted && (
-            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl shadow-blue-200">
-              <div className="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h3 className="text-2xl font-black mb-2">Well Done!</h3>
-              <p className="text-blue-100 mb-8 font-medium">You completed the Listening Module Section 1.</p>
-              <div className="text-5xl font-black mb-8">{score} / {questions.length}</div>
-              <Button variant="secondary" className="rounded-full font-bold px-10 h-12" asChild>
+            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl">
+              <h3 className="text-2xl font-black mb-2">Section Complete</h3>
+              <p className="text-blue-100 mb-8 font-medium">Your score has been updated in your profile.</p>
+              <div className="text-6xl font-black mb-8">{(score/data.questions.length * 9).toFixed(1)} Band</div>
+              <Button variant="secondary" className="rounded-full font-bold px-10 h-12 bg-white text-slate-900" asChild>
                 <Link href="/dashboard">Return to Dashboard</Link>
               </Button>
             </Card>

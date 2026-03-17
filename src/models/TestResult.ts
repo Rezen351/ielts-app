@@ -1,25 +1,40 @@
 import mongoose from 'mongoose';
 
 export interface ITestResult extends mongoose.Document {
-  candidateName: string;
-  testType: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
+  userId: mongoose.Types.ObjectId;
+  module: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
+  topic: string;
   score: number;
+  maxScore: number;
+  data: any; // Detailed breakdown (e.g., criteria scores or question results)
   date: Date;
 }
 
 const TestResultSchema = new mongoose.Schema<ITestResult>({
-  candidateName: {
-    type: String,
-    required: [true, 'Please provide a candidate name.'],
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
   },
-  testType: {
+  module: {
     type: String,
-    required: [true, 'Please specify the test type.'],
+    required: true,
     enum: ['Listening', 'Reading', 'Writing', 'Speaking'],
+  },
+  topic: {
+    type: String,
+    required: true,
   },
   score: {
     type: Number,
-    required: [true, 'Please provide the score.'],
+    required: true,
+  },
+  maxScore: {
+    type: Number,
+    required: true,
+  },
+  data: {
+    type: mongoose.Schema.Types.Mixed,
   },
   date: {
     type: Date,

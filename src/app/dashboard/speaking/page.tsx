@@ -14,7 +14,9 @@ import {
   Sparkles, 
   StopCircle,
   TrendingUp,
-  Volume2
+  Volume2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function SpeakingPage() {
@@ -24,6 +26,7 @@ export default function SpeakingPage() {
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
   
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
 
@@ -65,10 +68,10 @@ export default function SpeakingPage() {
       recognizer.startContinuousRecognitionAsync();
       recognizerRef.current = recognizer;
       setIsRecording(true);
-      toast.info("Recording started", { description: "Speak clearly into your microphone." });
+      toast.info("Recording started");
 
     } catch (err) {
-      toast.error("Speech Service Error", { description: "Failed to connect to Azure Speech." });
+      toast.error("Speech Service Error");
     }
   };
 
@@ -77,22 +80,20 @@ export default function SpeakingPage() {
       recognizerRef.current.stopContinuousRecognitionAsync();
       setIsRecording(false);
       setLoading(true);
-      
-      // Send transcript to AI for analysis
       await analyzeSpeaking(transcript);
     }
   };
 
   const analyzeSpeaking = async (text: string) => {
     try {
-      const response = await fetch('/api/evaluate/writing', { // Reusing writing logic for text analysis
+      const response = await fetch('/api/evaluate/writing', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           essay: text,
           taskType: 'Speaking Part 1',
           prompt: questions[currentPart],
-          userName: user?.name
+          userId: user?.id
         }),
       });
 
@@ -112,6 +113,7 @@ export default function SpeakingPage() {
     setCurrentPart(prev => (prev + 1) % questions.length);
     setTranscript('');
     setFeedback(null);
+    setShowTranslation(false);
   };
 
   return (
@@ -133,11 +135,8 @@ export default function SpeakingPage() {
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
         <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-white p-12 text-center space-y-8">
-          <div className="mx-auto w-24 h-24 bg-violet-100 rounded-[32px] flex items-center justify-center text-violet-600 relative transition-transform hover:scale-105 duration-500">
+          <div className="mx-auto w-24 h-24 bg-violet-100 rounded-[32px] flex items-center justify-center text-violet-600 relative">
             <Bot className="w-12 h-12" />
-            {isRecording && (
-              <div className="absolute -inset-2 border-2 border-violet-200 rounded-[36px] animate-ping opacity-25"></div>
-            )}
             <div className={`absolute -bottom-2 -right-2 w-8 h-8 ${isRecording ? 'bg-red-500' : 'bg-emerald-500'} border-4 border-white rounded-full flex items-center justify-center transition-colors shadow-lg`}>
               {isRecording ? <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div> : <div className="w-2 h-2 bg-white rounded-full"></div>}
             </div>
@@ -152,34 +151,17 @@ export default function SpeakingPage() {
 
           <div className="flex justify-center gap-4">
             {!isRecording ? (
-              <Button 
-                size="lg" 
-                onClick={startStreaming}
-                className="h-16 px-10 rounded-[28px] bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-2xl shadow-violet-200 flex gap-4 text-base transition-all active:scale-95"
-              >
+              <Button size="lg" onClick={startStreaming} className="h-16 px-10 rounded-[28px] bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-2xl shadow-violet-200 flex gap-4 text-base transition-all active:scale-95">
                 <Mic className="w-5 h-5" /> Start Speaking
               </Button>
             ) : (
-              <Button 
-                size="lg" 
-                onClick={stopStreaming}
-                className="h-16 px-10 rounded-[28px] bg-red-600 hover:bg-red-700 text-white font-bold shadow-2xl shadow-red-200 flex gap-4 text-base animate-pulse"
-              >
+              <Button size="lg" onClick={stopStreaming} className="h-16 px-10 rounded-[28px] bg-red-600 hover:bg-red-700 text-white font-bold shadow-2xl shadow-red-200 flex gap-4 text-base animate-pulse">
                 <StopCircle className="w-5 h-5" /> Finish Answer
               </Button>
             )}
           </div>
         </Card>
 
-        {/* Live Transcription */}
-        {isRecording && transcript && (
-          <div className="text-center p-8 animate-in fade-in duration-500">
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Transcription</p>
-             <p className="text-xl font-medium text-slate-700 italic leading-relaxed">"{transcript}..."</p>
-          </div>
-        )}
-
-        {/* Feedback Area */}
         {(loading || feedback) && (
           <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex justify-between items-center px-2">
@@ -192,7 +174,14 @@ export default function SpeakingPage() {
             <div className="grid md:grid-cols-3 gap-6">
               <Card className="md:col-span-2 border-slate-200 shadow-none rounded-[32px] p-8 space-y-8 bg-white">
                 <div className="space-y-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Your Full Response</p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Your Response</p>
+                    {user?.nativeLanguage !== 'en' && feedback && (
+                      <Button variant="ghost" size="sm" onClick={() => setShowTranslation(!showTranslation)} className="text-[10px] font-bold text-violet-600 uppercase tracking-widest gap-2">
+                        {showTranslation ? <><EyeOff className="w-3 h-3" /> Original</> : <><Eye className="w-3 h-3" /> Translation</>}
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-sm font-medium text-slate-600 italic leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
                     "{transcript}"
                   </p>
@@ -200,9 +189,9 @@ export default function SpeakingPage() {
                 {feedback && (
                   <div className="space-y-6">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Feedback</p>
-                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{feedback.feedback}</p>
+                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{showTranslation ? feedback.translatedFeedback : feedback.feedback}</p>
                     <div className="space-y-3">
-                      {feedback.suggestions.slice(0, 2).map((s: string, i: number) => (
+                      {(showTranslation ? feedback.translatedSuggestions : feedback.suggestions).slice(0, 2).map((s: string, i: number) => (
                         <div key={i} className="flex gap-4 p-4 rounded-xl bg-violet-50/50 border border-violet-100 text-xs font-medium text-slate-600">
                           <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
                           {s}
@@ -220,7 +209,7 @@ export default function SpeakingPage() {
                 ) : (
                   <div className="text-8xl font-black text-violet-500 tracking-tighter mb-4">{feedback?.overallScore || 'N/A'}</div>
                 )}
-                <Badge variant="outline" className="border-slate-800 text-slate-500 text-[10px] tracking-widest">REAL-TIME ANALYSIS</Badge>
+                <Badge variant="outline" className="border-slate-800 text-slate-500 text-[10px] tracking-widest uppercase">Real-time analysis</Badge>
               </Card>
             </div>
           </div>
