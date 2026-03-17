@@ -27,7 +27,6 @@ export async function POST(request: Request) {
     const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nEssay:\n${essay}`;
 
     const response = await client.chat.completions.create({
-      model: "", // Handled by baseURL in client
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }

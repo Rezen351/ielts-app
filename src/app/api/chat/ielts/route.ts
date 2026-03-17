@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     };
 
     const response = await client.chat.completions.create({
-      model: "", // Handled by baseURL in client
       messages: [systemMessage, ...messages],
     });
 
