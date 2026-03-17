@@ -11,7 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Essay content is required' }, { status: 400 });
     }
 
-    const systemPrompt = `You are a professional IELTS examiner...`;
+    const systemPrompt = `You are a professional IELTS examiner. Evaluate the following IELTS essay. 
+    Provide a detailed band score (0-9) based on four criteria.
+    Format the response as a JSON object with: overallScore, criteriaScores, feedback, and suggestions.`;
+
     const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nEssay:\n${essay}`;
 
     const response = await client.chat.completions.create({
@@ -25,7 +28,6 @@ export async function POST(request: Request) {
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
 
-    // Optional: Save to DB if user is provided
     if (userName) {
       await dbConnect();
       await TestResult.create({
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
     console.error('AI Evaluation error:', error);
     return NextResponse.json({ 
       success: false, 
-      message: 'Evaluation failed. Make sure your Azure AI keys are configured correctly.',
+      message: 'Evaluation failed',
       error: error.message 
     }, { status: 500 });
   }

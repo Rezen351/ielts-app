@@ -5,14 +5,20 @@ export async function POST(request: Request) {
   try {
     const { messages } = await request.json();
 
+    // Pastikan pesan diformat dengan benar (hanya role dan content)
+    const formattedMessages = messages.map((m: any) => ({
+      role: m.role,
+      content: m.content
+    }));
+
     const systemMessage = {
-      role: "system" as const,
-      content: "You are a professional IELTS Tutor..."
+      role: "system",
+      content: "You are a professional IELTS Tutor. Help students with grammar, vocabulary, and IELTS strategies. Be encouraging and concise."
     };
 
     const response = await client.chat.completions.create({
       model: deploymentName,
-      messages: [systemMessage, ...messages],
+      messages: [systemMessage, ...formattedMessages],
     });
 
     const reply = response.choices[0].message.content;
@@ -23,7 +29,7 @@ export async function POST(request: Request) {
     console.error('Chat API error:', error);
     return NextResponse.json({ 
       success: false, 
-      message: 'Deployment Not Found or Configuration Error.',
+      message: 'AI Request Error',
       debug: {
         deploymentUsed: deploymentName,
         errorType: error.code || error.name
