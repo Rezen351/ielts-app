@@ -39,10 +39,10 @@ export default function DashboardPage() {
 
   const sidebarLinks = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", active: true },
-    { label: "Listening", icon: Headphones, href: "#" },
-    { label: "Reading", icon: BookOpen, href: "#" },
-    { label: "Writing", icon: PenTool, href: "#" },
-    { label: "Speaking", icon: Mic, href: "#" },
+    { label: "Listening", icon: Headphones, href: "/dashboard/listening" },
+    { label: "Reading", icon: BookOpen, href: "/dashboard/reading" },
+    { label: "Writing", icon: PenTool, href: "/dashboard/writing" },
+    { label: "Speaking", icon: Mic, href: "/dashboard/speaking" },
   ];
 
   return (
@@ -189,18 +189,24 @@ export default function DashboardPage() {
                     <CardTitle className="text-sm font-bold uppercase tracking-widest">Recommended</CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-4 flex-1">
-                    <Button className="w-full justify-between h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold" size="lg">
-                      Start Full Mock Test
-                      <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <Button className="w-full justify-between h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold" size="lg" asChild>
+                      <Link href="/dashboard/reading">
+                        Start Full Mock Test
+                        <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      </Link>
                     </Button>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="h-24 flex flex-col gap-3 rounded-2xl border-slate-200 hover:bg-slate-50 group">
-                        <Bot className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Speaking AI</span>
+                      <Button variant="outline" className="h-24 flex flex-col gap-3 rounded-2xl border-slate-200 hover:bg-slate-50 group" asChild>
+                        <Link href="/dashboard/speaking">
+                          <Bot className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Speaking AI</span>
+                        </Link>
                       </Button>
-                      <Button variant="outline" className="h-24 flex flex-col gap-3 rounded-2xl border-slate-200 hover:bg-slate-50 group">
-                        <PenTool className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Writing AI</span>
+                      <Button variant="outline" className="h-24 flex flex-col gap-3 rounded-2xl border-slate-200 hover:bg-slate-50 group" asChild>
+                        <Link href="/dashboard/writing">
+                          <PenTool className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Writing AI</span>
+                        </Link>
                       </Button>
                     </div>
                   </CardContent>
