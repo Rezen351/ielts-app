@@ -14,9 +14,8 @@ export async function GET(request: Request) {
 
     await dbConnect();
 
-    // 1. Fetch recent results
+    // 1. Fetch recent results (tanpa sort sementara untuk menghindari error indeks Cosmos DB)
     const recentActivities = await TestResult.find({ userId })
-      .sort({ date: -1 })
       .limit(5);
 
     // 2. Aggregate average scores by module

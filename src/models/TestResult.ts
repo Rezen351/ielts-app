@@ -39,7 +39,11 @@ const TestResultSchema = new mongoose.Schema<ITestResult>({
   date: {
     type: Date,
     default: Date.now,
+    index: true, // Tambahkan indeks eksplisit
   },
 });
+
+// Tambahkan compound index untuk userId dan date (sering digunakan bersamaan)
+TestResultSchema.index({ userId: 1, date: -1 });
 
 export default mongoose.models.TestResult || mongoose.model<ITestResult>('TestResult', TestResultSchema);
