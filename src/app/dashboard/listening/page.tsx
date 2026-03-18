@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import { 
   Headphones, 
   ArrowLeft, 
@@ -16,7 +17,8 @@ import {
   CheckCircle2, 
   Clock,
   Volume2,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 export default function ListeningPage() {
@@ -27,20 +29,27 @@ export default function ListeningPage() {
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  
+  const playerRef = useRef<SpeechSDK.SpeakerAudioDestination | null>(null);
+  const synthesizerRef = useRef<SpeechSDK.SpeechSynthesizer | null>(null);
 
   useEffect(() => {
     fetchNewContent();
+    return () => {
+      stopAudio();
+    };
   }, []);
 
   const fetchNewContent = async () => {
     setLoading(true);
+    stopAudio();
     try {
       const response = await fetch('/api/generate/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           module: 'Listening',
-          topic: 'University Campus Life',
+          topic: 'Academic Life and Services',
           difficulty: 'Medium'
         }),
       });
@@ -52,6 +61,63 @@ export default function ListeningPage() {
       toast.error("Failed to load content");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const stopAudio = () => {
+    if (playerRef.current) {
+      playerRef.current.pause();
+    }
+    setIsPlaying(false);
+  };
+
+  const handlePlayAudio = async () => {
+    if (isPlaying) {
+      stopAudio();
+      return;
+    }
+
+    if (!data?.script) return;
+
+    try {
+      // 1. Get Token
+      const tokenRes = await fetch('/api/auth/speech-token');
+      const { token, region } = await tokenRes.json();
+
+      // 2. Setup Config
+      const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+      speechConfig.speechSynthesisVoiceName = "en-US-AndrewMultilingualNeural"; // High quality male voice
+      
+      playerRef.current = new SpeechSDK.SpeakerAudioDestination();
+      const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
+      
+      synthesizerRef.current = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+
+      playerRef.current.onAudioEnd = () => {
+        setIsPlaying(false);
+      };
+
+      setIsPlaying(true);
+      synthesizerRef.current.speakTextAsync(
+        data.script,
+        result => {
+          if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+            console.log("Synthesis finished.");
+          } else {
+            console.error("Speech synthesis cancelled or failed: " + result.errorDetails);
+            setIsPlaying(false);
+          }
+          synthesizerRef.current?.close();
+        },
+        err => {
+          console.error(err);
+          setIsPlaying(false);
+          synthesizerRef.current?.close();
+        }
+      );
+
+    } catch (err) {
+      toast.error("Audio Error", { description: "Failed to initialize AI voice." });
     }
   };
 
@@ -70,13 +136,13 @@ export default function ListeningPage() {
 
   const handleSubmit = async () => {
     setSubmitted(true);
+    stopAudio();
     let correctCount = 0;
     data.questions.forEach((q: any) => {
       if (answers[q.id] === q.correct) correctCount++;
     });
     setScore(correctCount);
     
-    // Save to DB
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       const user = JSON.parse(savedUser);
@@ -86,7 +152,7 @@ export default function ListeningPage() {
         body: JSON.stringify({
           userId: user.id,
           module: 'Listening',
-          topic: 'University Campus Life',
+          topic: 'Social Needs Conversation',
           score: (correctCount / data.questions.length) * 9,
           maxScore: 9,
           data: { answers }
@@ -101,7 +167,9 @@ export default function ListeningPage() {
     return (
       <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generating Audio Experience...</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center px-6">
+          AI is composing a unique listening scenario for you...
+        </p>
       </div>
     );
   }
@@ -115,7 +183,7 @@ export default function ListeningPage() {
           </Button>
           <div className="flex items-center gap-2">
             <Headphones className="w-5 h-5 text-blue-500" />
-            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Listening Module</h1>
+            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Listening Practice</h1>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -123,48 +191,51 @@ export default function ListeningPage() {
             <Clock className="w-4 h-4" />
             {formatTime(timeLeft)}
           </div>
-          <Button onClick={handleSubmit} disabled={submitted} className="bg-blue-600 hover:bg-blue-700 rounded-full font-bold px-6">
+          <Button onClick={handleSubmit} disabled={submitted} className="bg-blue-600 hover:bg-blue-700 rounded-full font-bold px-6 shadow-lg shadow-blue-200">
             Finish Test
           </Button>
         </div>
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
-        <Card className="border-slate-200 shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-slate-900 text-white p-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="w-24 h-24 bg-blue-600 rounded-[24px] flex items-center justify-center shadow-2xl shadow-blue-500/20">
+        <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-slate-900 text-white p-10 relative">
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div className="w-24 h-24 bg-blue-600 rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-500/40 relative">
               <Volume2 className="w-10 h-10 text-white" />
+              {isPlaying && <div className="absolute -inset-2 border-2 border-blue-400 rounded-[36px] animate-ping opacity-25"></div>}
             </div>
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">DYNAMIC SECTION 1</Badge>
-              <h2 className="text-2xl font-bold">Social Needs Conversation</h2>
-              <p className="text-slate-400 text-sm font-medium">Click play to listen to the AI-generated script.</p>
+            <div className="flex-1 text-center md:text-left space-y-3">
+              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">Dynamic AI Content</Badge>
+              <h2 className="text-2xl font-bold">Social & Academic Conversation</h2>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                Listen to the recording and answer the questions. You can replay the audio if needed in this practice mode.
+              </p>
             </div>
             <Button 
               size="lg" 
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="h-16 w-16 rounded-full bg-white text-slate-900 hover:bg-slate-100 shadow-xl"
+              onClick={handlePlayAudio}
+              className={`h-20 w-20 rounded-full shadow-2xl transition-all active:scale-95 ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
             >
-              {isPlaying ? <Pause className="w-6 h-6 fill-slate-900" /> : <Play className="w-6 h-6 fill-slate-900 ml-1" />}
+              {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
             </Button>
           </div>
           
-          {isPlaying && (
-            <div className="mt-8 p-6 bg-slate-800/50 rounded-2xl border border-slate-700 animate-in fade-in zoom-in-95 duration-500">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Transcript (For Practice Only)</p>
-              <p className="text-sm text-slate-300 leading-relaxed italic">"{data?.script}"</p>
-            </div>
-          )}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px]"></div>
         </Card>
 
-        <div className="space-y-6 pb-20">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 px-2">Questions</h3>
+        <div className="space-y-6 pb-24">
+          <div className="flex justify-between items-center px-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Questions 1-3</h3>
+            <Button variant="ghost" size="sm" onClick={fetchNewContent} className="text-slate-400 hover:text-blue-600 gap-2">
+              <RefreshCw className="w-3 h-3" /> New Script
+            </Button>
+          </div>
           
           {data?.questions.map((q: any) => (
-            <Card key={q.id} className={`border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white transition-all ${submitted && (answers[q.id] === q.correct ? 'border-emerald-200 bg-emerald-50/30' : 'border-red-200 bg-red-50/30')}`}>
+            <Card key={q.id} className={`border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white transition-all duration-500 ${submitted && (answers[q.id] === q.correct ? 'border-emerald-200 bg-emerald-50/30' : 'border-red-200 bg-red-50/30')}`}>
               <CardHeader className="p-8 pb-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xs shrink-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${submitted ? (answers[q.id] === q.correct ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white') : 'bg-slate-100 text-slate-400'}`}>
                     {q.id}
                   </div>
                   <p className="font-bold text-slate-800 leading-snug">{q.text}</p>
@@ -185,22 +256,59 @@ export default function ListeningPage() {
                     </div>
                   ))}
                 </RadioGroup>
+                {submitted && answers[q.id] !== q.correct && (
+                  <div className="mt-4 text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3" /> Correct: {q.correct}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
 
           {submitted && (
-            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl">
-              <h3 className="text-2xl font-black mb-2">Section Complete</h3>
-              <p className="text-blue-100 mb-8 font-medium">Your score has been updated in your profile.</p>
-              <div className="text-6xl font-black mb-8">{(score/data.questions.length * 9).toFixed(1)} Band</div>
-              <Button variant="secondary" className="rounded-full font-bold px-10 h-12 bg-white text-slate-900" asChild>
-                <Link href="/dashboard">Return to Dashboard</Link>
-              </Button>
+            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl shadow-blue-200 animate-in zoom-in-95 duration-500">
+              <div className="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <TrophyIcon className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-black mb-2">Practice Complete</h3>
+              <p className="text-blue-100 mb-8 font-medium">Excellent work! Your listening skills are improving.</p>
+              <div className="text-6xl font-black mb-8">{(score/data.questions.length * 9).toFixed(1)} <span className="text-xl opacity-50">Band</span></div>
+              <div className="flex gap-4 justify-center">
+                <Button variant="secondary" className="rounded-full font-bold px-10 h-12 bg-white text-slate-900" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <Button variant="outline" onClick={fetchNewContent} className="rounded-full font-bold px-10 h-12 border-white/20 text-white hover:bg-white/10">
+                  Try Another
+                </Button>
+              </div>
             </Card>
           )}
         </div>
       </main>
     </div>
+  );
+}
+
+function TrophyIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
   );
 }
