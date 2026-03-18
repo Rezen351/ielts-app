@@ -184,7 +184,7 @@ export async function POST(request: Request) {
       const questionDataRaw = JSON.parse(response.choices[0].message.content || '{}');
       
       const updatedContent = { ...pkg.content };
-      const moduleKey = moduleName.toLowerCase();
+      // moduleKey is already defined above
 
       // Logic to merge questionDataRaw into the correct place in updatedContent[moduleKey]
       // This will be highly specific to each module's structure

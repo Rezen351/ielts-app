@@ -22,7 +22,14 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - DB Logic: `src/lib/mongodb.ts`
 - Types: `src/types/`
 
-## Response Style
-- **Efficient:** Provide code snippets that are ready for copy-paste.
-- **Physics-Minded:** Use clear, logical analogies (like signal-to-noise ratio in AI evaluations).
-- **Proactive:** If a suggestion might hit the Azure Token Limit (1000 tokens), warn the user and suggest "chaining" or "streaming".
+## Automation & Workflow
+- **Post-Fix Verification:** Every time a bug is fixed or a feature is implemented, you **MUST** run `npm run build` to ensure no build errors exist.
+- **Git Protocol:** After a successful build, automatically `git add`, `git commit` (with a clear, concise message), and `git push` to GitHub.
+- **Update Tracking:** Maintain an "Update Log" at the end of this file to track major changes and fixes.
+
+## Update Log
+### [2026-03-18]
+- **Fix:** Resolved `TypeError` in `examiner/route.ts` caused by uninitialized nested objects in writing/speaking generation.
+- **Feature:** Implemented **Hybrid Model Strategy**. Using GPT-4o for high-quality structure/prompts and GPT-4o-mini for cost-effective mass question generation.
+- **Optimization:** Added model selection logic in `azure-openai.ts` and API routes.
+- **Workflow:** Updated `GEMINI.md` with strict build-and-push rules.

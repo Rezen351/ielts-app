@@ -116,9 +116,9 @@ Student Answers: ${JSON.stringify(userAnswers, null, 2)}`;
 
         const moduleResults = await TestResult.find({ userId: user._id, module: moduleName });
         const numTests = moduleResults.length;
-        const avgScore = moduleResults.reduce((acc, r) => acc + r.score, 0) / numTests;
+        const avgScore = moduleResults.reduce((acc: any, r: any) => acc + r.score, 0) / numTests;
 
-        let currentProgress = user.progress.get(moduleName) || { difficulty: 'Easy', level: 1 };
+        let currentProgress = (user.progress as any).get(moduleName) || { difficulty: 'Easy', level: 1 };
 
         if (avgScore >= 7.5 && numTests >= 3) {
           currentProgress.level += 1;
@@ -131,7 +131,7 @@ Student Answers: ${JSON.stringify(userAnswers, null, 2)}`;
               currentProgress.level = 1;
             }
           }
-          user.progress.set(moduleName, currentProgress);
+          (user.progress as any).set(moduleName, currentProgress);
         }
       }
       await user.save();

@@ -66,9 +66,9 @@ export async function POST(request: Request) {
       // Update user progress
       const moduleResults = await TestResult.find({ userId: user._id, module: moduleType });
       const numTests = moduleResults.length;
-      const avgScore = moduleResults.reduce((acc, r) => acc + r.score, 0) / numTests;
+      const avgScore = moduleResults.reduce((acc: any, r: any) => acc + r.score, 0) / numTests;
 
-      let currentProgress = user.progress.get(moduleType) || { difficulty: 'Easy', level: 1 };
+      let currentProgress = (user.progress as any).get(moduleType) || { difficulty: 'Easy', level: 1 };
 
       if (avgScore >= 7.5 && numTests >= 3) {
         currentProgress.level += 1;
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             currentProgress.level = 1;
           }
         }
-        user.progress.set(moduleType, currentProgress);
+        (user.progress as any).set(moduleType, currentProgress);
         await user.save();
       }
     }
