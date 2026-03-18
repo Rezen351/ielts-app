@@ -172,7 +172,7 @@ export default function ListeningPage() {
               </CardHeader>
               <CardContent className="px-8 pb-8 pl-20">
                 <RadioGroup 
-                  value={answers[q.id]} 
+                  value={answers[q.id] || ""} 
                   onValueChange={(val) => setAnswers({...answers, [q.id]: val})}
                   disabled={submitted}
                 >
