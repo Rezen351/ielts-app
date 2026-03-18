@@ -32,7 +32,9 @@ export default function SettingsPage() {
       setNativeLang(parsed.nativeLanguage || 'id');
       setOccupation(parsed.occupation || 'Student');
       setHobbies(Array.isArray(parsed.hobbies) ? parsed.hobbies.join(', ') : (parsed.hobbies || ''));
-      setGoalBand(parsed.goalBand?.toString() || '7.0');
+      // Ensure formatting matches select options (e.g. "9.0")
+      const band = parsed.goalBand ? Number(parsed.goalBand).toFixed(1) : '7.0';
+      setGoalBand(band);
     }
   }, []);
 
@@ -66,6 +68,9 @@ export default function SettingsPage() {
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
         setUser(userToStore);
+        
+        // Explicitly update the goalBand state with fixed decimal
+        setGoalBand(Number(data.user.goalBand).toFixed(1));
       } else {
         toast.error("Error", { description: data.message });
       }
