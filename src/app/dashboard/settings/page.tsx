@@ -55,15 +55,17 @@ export default function SettingsPage() {
 
       if (response.ok) {
         toast.success("Settings saved", { description: "Your persona and profile have been updated." });
-        // Update local storage
-        const updatedUser = { 
-          ...user, 
-          nativeLanguage: nativeLang,
-          occupation,
-          hobbies: hobbies.split(',').map(h => h.trim()).filter(h => h !== ''),
-          goalBand: parseFloat(goalBand)
+        
+        // Update local storage with the full updated user object from backend
+        const userToStore = {
+          ...user,
+          nativeLanguage: data.user.nativeLanguage,
+          occupation: data.user.occupation,
+          hobbies: data.user.hobbies,
+          goalBand: data.user.goalBand
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        setUser(userToStore);
       } else {
         toast.error("Error", { description: data.message });
       }

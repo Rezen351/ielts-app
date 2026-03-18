@@ -40,6 +40,7 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
   - **Phi-4 Mini:** Used for efficient Module Structure generation and Speaking Part 1/3 questions.
   - **GPT-4o-mini:** Used for general tasks and fallback.
 - **Fix:** Enhanced evaluation logic to strictly follow official IELTS Band Descriptors (0-9) with criteria justifications.
+- **Fix:** Resolved issue where "Goal Band" settings would reset to default after saving by ensuring API responses include persona fields and local storage is correctly synced.
 - **Fix:** Resolved TypeScript build error in `dashboard/page.tsx` related to `sidebarLinks`.
 - **Optimization:** Refined all generation prompts to include specific difficulty contexts (Easy/Medium/Hard) mapped to Target Bands.
 - **Workflow:** Automated the process of updating this log and pushing to GitHub after successful builds.

@@ -28,7 +28,15 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'User registered successfully!',
-      user: { id: newUser._id, name: newUser.name, email: newUser.email }
+      user: { 
+        id: newUser._id, 
+        name: newUser.name, 
+        email: newUser.email,
+        nativeLanguage: newUser.nativeLanguage,
+        occupation: newUser.occupation,
+        hobbies: newUser.hobbies,
+        goalBand: newUser.goalBand
+      }
     }, { status: 201 });
 
   } catch (error: any) {

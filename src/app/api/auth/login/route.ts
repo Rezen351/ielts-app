@@ -25,7 +25,10 @@ export async function POST(request: Request) {
         id: user._id, 
         name: user.name, 
         email: user.email,
-        nativeLanguage: user.nativeLanguage 
+        nativeLanguage: user.nativeLanguage,
+        occupation: user.occupation,
+        hobbies: user.hobbies,
+        goalBand: user.goalBand
       }
     });
 
