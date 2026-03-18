@@ -5,6 +5,9 @@ export interface IUser extends mongoose.Document {
   email: string;
   password: string;
   nativeLanguage: string;
+  hobbies: string[];
+  occupation: string;
+  goalBand: number;
   progress: {
     [module: string]: {
       difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -36,6 +39,18 @@ const UserSchema = new mongoose.Schema<IUser>({
   nativeLanguage: {
     type: String,
     default: 'id', // Default to Indonesia
+  },
+  hobbies: {
+    type: [String],
+    default: [],
+  },
+  occupation: {
+    type: String,
+    default: 'Student',
+  },
+  goalBand: {
+    type: Number,
+    default: 7.0,
   },
   progress: {
     type: Map,

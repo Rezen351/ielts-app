@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import getClient, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH, DEPLOYMENT_MISTRAL, DEPLOYMENT_PHI } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import IELTSContent from '@/models/IELTSContent';
+import User from '@/models/User';
 
 export async function GET() {
   try {
@@ -17,16 +18,19 @@ export async function GET() {
 }
 
 // Renamed and modified to generate only the structure
-const getModuleStructurePrompt = (moduleName: string, testType: string, difficulty: string) => {
+const getModuleStructurePrompt = (moduleName: string, testType: string, difficulty: string, personaContext?: string) => {
   const difficultyContext = 
     difficulty === 'Easy' ? 'Target Band 5.0-6.0: Simpler vocabulary, clear articulation, slower pace, and more direct answers.' :
     difficulty === 'Hard' ? 'Target Band 8.0-9.0: Complex academic vocabulary, idiomatic expressions, faster pace with more distractors, and nuanced arguments.' :
     'Target Band 6.5-7.5: Standard IELTS difficulty with a mix of direct and indirect information, and some complex sentence structures.';
 
+  const personaInstruction = personaContext ? `PERSONA CONTEXT: ${personaContext} (Incorporate user interests into the topics and themes of the test sections where appropriate).` : '';
+
   switch (moduleName.toLowerCase()) {
     case 'listening':
       return `You are a professional IELTS Listening content creator. Generate the STRUCTURE for a complete IELTS Listening test.
       Difficulty Context: ${difficultyContext}
+      ${personaInstruction}
       
       Describe 4 sections that strictly follow the official IELTS format:
       - Section 1: A conversation between two people set in an everyday social context (e.g., booking a hotel, inquiring about a course).
@@ -43,6 +47,7 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
       if (testType === 'Academic') {
         return `You are a professional IELTS Reading content creator for the ACADEMIC module. Generate the STRUCTURE for an IELTS Reading test.
         Difficulty Context: ${difficultyContext}
+        ${personaInstruction}
         
         Describe 3 passages:
         - Passage 1: Descriptive and factual topic.
@@ -56,6 +61,7 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
       } else {
         return `You are a professional IELTS Reading content creator for the GENERAL TRAINING module. Generate the STRUCTURE for an IELTS Reading test.
         Difficulty Context: ${difficultyContext}
+        ${personaInstruction}
         
         Describe 3 sections:
         - Section 1: Two or three short factual texts (everyday life topics).
@@ -74,6 +80,7 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
       
       return `You are a professional IELTS Writing content creator. Generate the STRUCTURE for an IELTS ${testType} Writing test.
       Difficulty Context: ${difficultyContext}
+      ${personaInstruction}
       
       Include Task 1 and Task 2:
       - ${task1Desc}
@@ -86,6 +93,7 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
     case 'speaking':
       return `You are a professional IELTS Speaking content creator. Generate the STRUCTURE for an IELTS Speaking test.
       Difficulty Context: ${difficultyContext}
+      ${personaInstruction}
       
       Describe 3 parts:
       - Part 1: Introduction and interview (4-5 minutes) on familiar topics like home, family, work, studies, and interests.
@@ -98,13 +106,15 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
   }
 };
 
-const getQuestionPrompt = (moduleName: string, testType: string, difficulty: string, currentContent: any, questionDetails: any) => {
+const getQuestionPrompt = (moduleName: string, testType: string, difficulty: string, currentContent: any, questionDetails: any, personaContext?: string) => {
   const { sectionIndex, questionIndex, passageTitle, taskType, partNumber } = questionDetails;
   
   const difficultyContext = 
     difficulty === 'Easy' ? 'Target Band 5.0-6.0: Simpler vocabulary, clear articulation, slower pace, and more direct answers.' :
     difficulty === 'Hard' ? 'Target Band 8.0-9.0: Complex academic vocabulary, idiomatic expressions, faster pace with more distractors, and nuanced arguments.' :
     'Target Band 6.5-7.5: Standard IELTS difficulty with a mix of direct and indirect information, and some complex sentence structures.';
+
+  const personaInstruction = personaContext ? `PERSONA CONTEXT: ${personaContext} (Try to make the content feel relevant to the user's background).` : '';
 
   switch (moduleName.toLowerCase()) {
     case 'listening':

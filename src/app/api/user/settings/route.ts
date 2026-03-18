@@ -4,7 +4,7 @@ import User from '@/models/User';
 
 export async function POST(request: Request) {
   try {
-    const { userId, nativeLanguage } = await request.json();
+    const { userId, nativeLanguage, hobbies, occupation, goalBand } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
@@ -13,7 +13,12 @@ export async function POST(request: Request) {
     await dbConnect();
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { nativeLanguage },
+      { 
+        nativeLanguage,
+        hobbies: Array.isArray(hobbies) ? hobbies : (hobbies ? hobbies.split(',').map((h: string) => h.trim()) : []),
+        occupation,
+        goalBand: Number(goalBand) || 7.0
+      },
       { new: true }
     );
 

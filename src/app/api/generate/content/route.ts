@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import getClient, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH, DEPLOYMENT_MISTRAL, DEPLOYMENT_PHI } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import IELTSContent from '@/models/IELTSContent';
+import User from '@/models/User';
 
 export async function POST(request: Request) {
   try {
-    const { module, topic, difficulty } = await request.json();
+    const { module, topic, difficulty, userId } = await request.json();
 
     if (!module || !topic) {
       return NextResponse.json({ message: 'Module and Topic are required' }, { status: 400 });
@@ -13,6 +14,15 @@ export async function POST(request: Request) {
 
     await dbConnect();
     const client = getClient();
+
+    // Fetch user for persona context if userId is provided
+    let personaContext = "";
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        personaContext = `The user is a ${user.occupation || 'Student'} with interests in: ${user.hobbies?.join(', ') || 'General topics'}. Target Band: ${user.goalBand || 7.0}.`;
+      }
+    }
 
     // 1. Check if content exists in DB (to save costs)
     const existingContent = await IELTSContent.findOne({ module, topic, difficulty });
@@ -50,6 +60,7 @@ export async function POST(request: Request) {
       selectedModel = DEPLOYMENT_HIGH;
       systemPrompt = `You are a professional IELTS Writing content creator. Generate a unique IELTS Writing Task 2 prompt based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}). 
+      ${personaContext ? `PERSONA CONTEXT: ${personaContext} (Try to make the prompt relevant to the user's background if possible, or use it to calibrate difficulty).` : ''}
       
       CRITICAL INSTRUCTIONS:
       1. PROMPT: Use standard IELTS phrasing like "To what extent do you agree or disagree?" or "Discuss both views and give your opinion."
@@ -82,6 +93,7 @@ export async function POST(request: Request) {
       selectedModel = DEPLOYMENT_PHI;
       systemPrompt = `You are a professional IELTS Speaking examiner. Generate 5 unique IELTS Speaking Part 1 questions based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}). 
+      ${personaContext ? `PERSONA CONTEXT: ${personaContext} (Make questions feel personal to the user's hobbies or occupation where appropriate).` : ''}
       
       CRITICAL INSTRUCTIONS:
       1. AUTHENTICITY: Questions must be typical of IELTS Part 1 (e.g., about personal experiences, preferences, or habits related to the topic).

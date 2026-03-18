@@ -29,6 +29,11 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 
 ## Update Log
 ### [2026-03-19]
+- **UI/UX:** Completely redesigned the Landing Page (`page.tsx`) with a stunning, modern dark-mode aesthetic, featuring animated gradients, glassmorphism, and dynamic scroll effects.
+- **Feature:** Introduced **AI Persona Context**. 
+  - Added `occupation`, `hobbies`, and `goalBand` to the User model.
+  - Built a new "Persona Details" section in the Dashboard Settings.
+  - Integrated persona data into `api/generate/content` and `api/generate/examiner` to ensure AI-generated Reading passages, Speaking questions, and Writing prompts are highly tailored to the user's background.
 - **Feature:** Implemented **Multi-Model Orchestration Strategy**.
   - **Mistral Large:** Used for high-quality Reading passages and Listening scripts.
   - **GPT-4o (High):** Used for Writing/Speaking evaluation and Band 9 sample answers.
