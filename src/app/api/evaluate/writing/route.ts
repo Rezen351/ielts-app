@@ -10,18 +10,21 @@ export async function POST(request: Request) {
     const { essay, taskType, prompt, userId } = await request.json();
 
     if (!essay) {
-      return NextResponse.json({ message: 'Essay content is required' }, { status: 400 });
+      return NextResponse.json({ message: 'Essay/Transcript content is required' }, { status: 400 });
     }
 
     await dbConnect();
     const user = userId ? await User.findById(userId) : null;
     const targetLang = user?.nativeLanguage || 'en';
 
-    const systemPrompt = `You are a professional IELTS examiner. Evaluate the following IELTS essay. 
-    Provide a detailed band score (0-9) based on four criteria.
+    // Determine module type based on taskType
+    const moduleType = taskType.toLowerCase().includes('speaking') ? 'Speaking' : 'Writing';
+
+    const systemPrompt = `You are a professional IELTS examiner. Evaluate the following IELTS ${moduleType} response. 
+    Provide a detailed band score (0-9) based on IELTS criteria.
     Format the response as a JSON object with: overallScore, criteriaScores, feedback, and suggestions.`;
 
-    const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nEssay:\n${essay}`;
+    const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nResponse:\n${essay}`;
 
     const response = await client.chat.completions.create({
       model: deploymentName,
@@ -45,11 +48,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // SAVE TO DATABASE
     if (user) {
       await TestResult.create({
-        candidateName: user.name,
-        testType: 'Writing',
+        userId: user._id,
+        module: moduleType,
+        topic: prompt.substring(0, 50) + "...", // Use snippet of prompt as topic
         score: result.overallScore,
+        maxScore: 9,
+        data: { 
+          criteriaScores: result.criteriaScores,
+          originalResponse: essay
+        },
         date: new Date()
       });
     }

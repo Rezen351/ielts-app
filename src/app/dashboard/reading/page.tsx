@@ -86,8 +86,8 @@ export default function ReadingPage() {
         body: JSON.stringify({
           userId: user.id,
           module: 'Reading',
-          topic: 'Technology and Environment',
-          score: (correctCount / data.questions.length) * 9, // Convert to IELTS band
+          topic: data?.title || 'Academic Reading',
+          score: (correctCount / data.questions.length) * 9, 
           maxScore: 9,
           data: { answers }
         }),

@@ -152,7 +152,7 @@ export default function ListeningPage() {
         body: JSON.stringify({
           userId: user.id,
           module: 'Listening',
-          topic: 'Social Needs Conversation',
+          topic: 'Academic Life Conversation',
           score: (correctCount / data.questions.length) * 9,
           maxScore: 9,
           data: { answers }
