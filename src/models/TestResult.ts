@@ -6,7 +6,7 @@ export interface ITestResult extends mongoose.Document {
   topic: string;
   score: number;
   maxScore: number;
-  data: any; // Detailed breakdown (e.g., criteria scores or question results)
+  data: any;
   date: Date;
 }
 
@@ -39,11 +39,16 @@ const TestResultSchema = new mongoose.Schema<ITestResult>({
   date: {
     type: Date,
     default: Date.now,
-    index: true, // Tambahkan indeks eksplisit
+    index: true,
   },
 });
 
-// Tambahkan compound index untuk userId dan date (sering digunakan bersamaan)
 TestResultSchema.index({ userId: 1, date: -1 });
 
-export default mongoose.models.TestResult || mongoose.model<ITestResult>('TestResult', TestResultSchema);
+// Use a unique name or clear the model if it exists to force update the schema
+// Next.js hot reloading often keeps the old schema in memory
+if (mongoose.models.TestResult) {
+  delete (mongoose.models as any).TestResult;
+}
+
+export default mongoose.model<ITestResult>('TestResult', TestResultSchema);

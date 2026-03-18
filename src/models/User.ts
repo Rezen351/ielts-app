@@ -37,4 +37,8 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
 });
 
-export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+if (mongoose.models.User) {
+  delete (mongoose.models as any).User;
+}
+
+export default mongoose.model<IUser>('User', UserSchema);
