@@ -117,8 +117,7 @@ export default function ExaminerPage() {
         }
       }
 
-      // 3. Generate questions incrementally
-      let globalQuestionIndex = 0;
+      // 3. Generate sections incrementally
       for (let i = 0; i < moduleList.length; i++) {
         const mod = moduleList[i];
         const moduleKey = mod.toLowerCase();
@@ -128,73 +127,56 @@ export default function ExaminerPage() {
                 ? fullTestData[moduleKey].structure.sections 
                 : fullTestData[moduleKey].structure.passages;
 
+            if (moduleKey === 'listening') fullTestData.listening.sections = [];
+            else fullTestData.reading.passages = [];
+
             for (let sIdx = 0; sIdx < sectionsOrPassages.length; sIdx++) {
-                const sectionOrPassage = sectionsOrPassages[sIdx];
-                // Initialize questions array for this section/passage
+                setGenerationStatus(`Generating ${mod} Section ${sIdx + 1}...`);
+                setGenerationProgress(25 + ((i * 20) + (sIdx / sectionsOrPassages.length) * 20));
+
+                const sectionRes = await fetch('/api/generate/examiner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'generateSection',
+                        packageId: newPackageId,
+                        moduleName: mod,
+                        questionDetails: { sectionIndex: sIdx },
+                        testType,
+                        difficulty
+                    })
+                });
+                const sectionResult = await sectionRes.json();
+                if (!sectionResult.success) throw new Error(sectionResult.error);
+                
                 if (moduleKey === 'listening') {
-                    if (!fullTestData.listening.sections) fullTestData.listening.sections = [];
-                    if (!fullTestData.listening.sections[sIdx]) fullTestData.listening.sections[sIdx] = { ...sectionOrPassage, questions: [] };
-                    else fullTestData.listening.sections[sIdx].questions = [];
+                    fullTestData.listening.sections[sIdx] = {
+                        ...sectionsOrPassages[sIdx],
+                        script: sectionResult.data.script,
+                        questions: sectionResult.data.questions
+                    };
                 } else { // reading
-                    if (!fullTestData.reading.passages) fullTestData.reading.passages = [];
-                    if (!fullTestData.reading.passages[sIdx]) fullTestData.reading.passages[sIdx] = { ...sectionOrPassage, questions: [] };
-                    else fullTestData.reading.passages[sIdx].questions = [];
+                    fullTestData.reading.passages[sIdx] = {
+                        ...sectionsOrPassages[sIdx],
+                        text: sectionResult.data.text,
+                        questions: sectionResult.data.questions
+                    };
                 }
 
-                for (let qNum = 1; qNum <= sectionOrPassage.questionCount; qNum++) { // Iterate qNum from 1 to total questions
-                    globalQuestionIndex++;
-                    setGenerationStatus(`Generating ${mod} Q${globalQuestionIndex}...`);
-                    setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70); // 25% for structure, 70% for questions
-
-                    const questionRes = await fetch('/api/generate/examiner', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'generateQuestion',
-                            packageId: newPackageId,
-                            moduleName: mod,
-                            questionDetails: {
-                                sectionIndex: sIdx,
-                                questionNumber: qNum,
-                                totalQuestionsInSection: sectionOrPassage.questionCount,
-                                sectionTitle: sectionOrPassage.title, // For context
-                                sectionType: sectionOrPassage.type, // For listening
-                                passageText: moduleKey === 'reading' ? (sectionOrPassage.text || 'N/A') : undefined, // For reading
-                                // Add other context needed for prompt
-                            },
-                            testType,
-                            difficulty
-                        })
-                    });
-                    const questionResult = await questionRes.json();
-                    if (!questionResult.success) throw new Error(questionResult.error);
-                    
-                    if (moduleKey === 'listening') {
-                        fullTestData.listening.sections[sIdx].questions.push(questionResult.data.question);
-                        if (questionResult.data.script) { // Listening script generated per question if needed
-                            if (!fullTestData.listening.scripts) fullTestData.listening.scripts = [];
-                            fullTestData.listening.scripts.push(questionResult.data.script);
-                        }
-                    } else { // reading
-                        fullTestData.reading.passages[sIdx].questions.push(questionResult.data.question);
-                    }
-
-                    // Merge answer key
-                    if (questionResult.data.answerKey) {
-                        fullTestData.answerKey = {
-                            ...fullTestData.answerKey,
-                            ...questionResult.data.answerKey
-                        };
-                    }
-                    generatedQuestionCount++;
+                // Merge answer key
+                if (sectionResult.data.answerKey) {
+                    if (!fullTestData.answerKey[moduleKey]) fullTestData.answerKey[moduleKey] = {};
+                    fullTestData.answerKey[moduleKey] = {
+                        ...fullTestData.answerKey[moduleKey],
+                        ...sectionResult.data.answerKey
+                    };
                 }
             }
         } else if (moduleKey === 'writing') {
-            // Generate Task 1
-            globalQuestionIndex++; // Count as a question for progress
-            setGenerationStatus(`Generating Writing Task 1...`);
-            setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70);
+            setGenerationStatus(`Generating Writing Tasks...`);
+            setGenerationProgress(75);
 
+            // Task 1
             const writingTask1Res = await fetch('/api/generate/examiner', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -210,13 +192,8 @@ export default function ExaminerPage() {
             const writingTask1Result = await writingTask1Res.json();
             if (!writingTask1Result.success) throw new Error(writingTask1Result.error);
             fullTestData.writing = { task1: writingTask1Result.data };
-            generatedQuestionCount++;
 
-            // Generate Task 2
-            globalQuestionIndex++; // Count as a question for progress
-            setGenerationStatus(`Generating Writing Task 2...`);
-            setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70);
-
+            // Task 2
             const writingTask2Res = await fetch('/api/generate/examiner', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -232,127 +209,44 @@ export default function ExaminerPage() {
             const writingTask2Result = await writingTask2Res.json();
             if (!writingTask2Result.success) throw new Error(writingTask2Result.error);
             fullTestData.writing.task2 = writingTask2Result.data;
-            generatedQuestionCount++;
             
-            // Merge answer keys for writing tasks
+            fullTestData.answerKey.writing = {};
             if (writingTask1Result.data.answerKey) {
-                fullTestData.answerKey = {
-                    ...fullTestData.answerKey,
-                    writing: {
-                        task1: writingTask1Result.data.answerKey,
-                    }
-                };
+                fullTestData.answerKey.writing.task1 = writingTask1Result.data.answerKey;
             }
             if (writingTask2Result.data.answerKey) {
                 fullTestData.answerKey.writing.task2 = writingTask2Result.data.answerKey;
             }
 
         } else if (moduleKey === 'speaking') {
-            // Part 1
-            fullTestData.speaking = { part1: [], part2: {}, part3: [] }; // Initialize speaking module
-            const part1QuestionsCount = fullTestData[moduleKey].structure.part1.questions?.length || 0;
-            for (let qIdx = 0; qIdx < part1QuestionsCount; qIdx++) {
-              globalQuestionIndex++;
-              setGenerationStatus(`Generating Speaking Part 1 Q${qIdx + 1}...`);
-              setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70);
+            fullTestData.speaking = { part1: [], part2: {}, part3: [] };
+            for (let partIdx = 0; partIdx < 3; partIdx++) {
+                setGenerationStatus(`Generating Speaking Part ${partIdx + 1}...`);
+                setGenerationProgress(85 + (partIdx * 5));
 
-              const speakingQRes = await fetch('/api/generate/examiner', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                      action: 'generateQuestion',
-                      packageId: newPackageId,
-                      moduleName: mod,
-                      questionDetails: { partNumber: 1, questionIndex: qIdx, totalQuestionsInPart: part1QuestionsCount },
-                      testType,
-                      difficulty
-                  })
-              });
-              const speakingQResult = await speakingQRes.json();
-              if (!speakingQResult.success) throw new Error(speakingQResult.error);
-              fullTestData.speaking.part1.push(speakingQResult.data.question);
-              if (speakingQResult.data.answerKey) {
-                  fullTestData.answerKey = {
-                      ...fullTestData.answerKey,
-                      speaking: {
-                          part1: {
-                              ...fullTestData.answerKey.speaking?.part1,
-                              ...speakingQResult.data.answerKey,
-                          }
-                      }
-                  };
-              }
-              generatedQuestionCount++;
-            }
-
-            // Part 2 (Cue Card)
-            globalQuestionIndex++;
-            setGenerationStatus(`Generating Speaking Part 2 Cue Card...`);
-            setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70);
-
-            const speakingPart2Res = await fetch('/api/generate/examiner', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'generateQuestion',
-                    packageId: newPackageId,
-                    moduleName: mod,
-                    questionDetails: { partNumber: 2, questionIndex: 0 }, // Cue card is a single item
-                    testType,
-                    difficulty
-                })
-            });
-            const speakingPart2Result = await speakingPart2Res.json();
-            if (!speakingPart2Result.success) throw new Error(speakingPart2Result.error);
-            fullTestData.speaking.part2 = speakingPart2Result.data;
-            if (speakingPart2Result.data.answerKey) {
-                fullTestData.answerKey = {
-                    ...fullTestData.answerKey,
-                    speaking: {
-                        part2: {
-                            ...fullTestData.answerKey.speaking?.part2,
-                            ...speakingPart2Result.data.answerKey,
-                        }
-                    }
-                };
-            }
-            generatedQuestionCount++;
-
-            // Part 3
-            const part3QuestionsCount = fullTestData[moduleKey].structure.part3.questions?.length || 0;
-            fullTestData.speaking.part3 = [];
-            for (let qIdx = 0; qIdx < part3QuestionsCount; qIdx++) {
-                globalQuestionIndex++;
-                setGenerationStatus(`Generating Speaking Part 3 Q${qIdx + 1}...`);
-                setGenerationProgress(25 + (generatedQuestionCount / overallQuestionCount) * 70);
-
-                const speakingQRes = await fetch('/api/generate/examiner', {
+                const speakingRes = await fetch('/api/generate/examiner', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'generateQuestion',
+                        action: 'generateSection',
                         packageId: newPackageId,
                         moduleName: mod,
-                        questionDetails: { partNumber: 3, questionIndex: qIdx, totalQuestionsInPart: part3QuestionsCount },
+                        questionDetails: { sectionIndex: partIdx },
                         testType,
                         difficulty
                     })
                 });
-                const speakingQResult = await speakingQRes.json();
-                if (!speakingQResult.success) throw new Error(speakingQResult.error);
-                fullTestData.speaking.part3.push(speakingQResult.data.question);
-                if (speakingQResult.data.answerKey) {
-                    fullTestData.answerKey = {
-                        ...fullTestData.answerKey,
-                        speaking: {
-                            part3: {
-                                ...fullTestData.answerKey.speaking?.part3,
-                                ...speakingQResult.data.answerKey,
-                            }
-                        }
-                    };
+                const speakingResult = await speakingRes.json();
+                if (!speakingResult.success) throw new Error(speakingResult.error);
+
+                if (partIdx === 0) fullTestData.speaking.part1 = speakingResult.data.questions;
+                else if (partIdx === 1) fullTestData.speaking.part2 = speakingResult.data;
+                else if (partIdx === 2) fullTestData.speaking.part3 = speakingResult.data.questions;
+
+                if (speakingResult.data.answerKey) {
+                    if (!fullTestData.answerKey.speaking) fullTestData.answerKey.speaking = {};
+                    fullTestData.answerKey.speaking[`part${partIdx + 1}`] = speakingResult.data.answerKey;
                 }
-                generatedQuestionCount++;
             }
         }
       }
@@ -652,7 +546,7 @@ export default function ExaminerPage() {
                          <div className="space-y-8">
                             <div className="space-y-4">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 1: Introduction</h4>
-                                {testData.speaking.part1?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {q}</p>)}
+                                {testData.speaking.part1?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {typeof q === 'string' ? q : q.text}</p>)}
                             </div>
                             <div className="space-y-4 border-t pt-8">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 2: Cue Card</h4>
@@ -665,7 +559,7 @@ export default function ExaminerPage() {
                             </div>
                             <div className="space-y-4 border-t pt-8">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 3: Discussion</h4>
-                                {testData.speaking.part3?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {q}</p>)}
+                                {testData.speaking.part3?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {typeof q === 'string' ? q : q.text}</p>)}
                             </div>
                          </div>
                       ) : null)}

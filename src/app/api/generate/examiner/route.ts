@@ -106,6 +106,106 @@ const getModuleStructurePrompt = (moduleName: string, testType: string, difficul
   }
 };
 
+const getSectionPrompt = (moduleName: string, testType: string, difficulty: string, currentContent: any, sectionDetails: any, personaContext?: string) => {
+  const { sectionIndex } = sectionDetails;
+  
+  const difficultyContext = 
+    difficulty === 'Easy' ? 'Target Band 5.0-6.0: Simpler vocabulary, clear articulation, slower pace, and more direct answers.' :
+    difficulty === 'Hard' ? 'Target Band 8.0-9.0: Complex academic vocabulary, idiomatic expressions, faster pace with more distractors, and nuanced arguments.' :
+    'Target Band 6.5-7.5: Standard IELTS difficulty with a mix of direct and indirect information, and some complex sentence structures.';
+
+  const personaInstruction = personaContext ? `PERSONA CONTEXT: ${personaContext} (Try to make the content feel relevant to the user's background).` : '';
+
+  switch (moduleName.toLowerCase()) {
+    case 'listening':
+        const section = currentContent.listening.structure.sections[sectionIndex];
+        return `You are an IELTS Listening examiner. Generate a COMPLETE IELTS Listening section (10 questions).
+        Context: ${section.contextDescription}
+        Section Title: "${section.title}"
+        Question Type: "${section.type}"
+        Section Number: ${sectionIndex + 1}
+        Difficulty: ${difficulty} (${difficultyContext})
+        ${personaInstruction}
+        
+        Requirements:
+        1. Generate a coherent AUDIO SCRIPT for this section (monologue or dialogue as per context).
+        2. Generate 10 high-quality IELTS questions based STRICTLY on the script.
+        3. For Multiple Choice, provide 3 plausible options (A, B, C).
+        4. For Completion types, ensure answers are concise (usually 1-3 words).
+        5. The response MUST be a valid JSON object.
+        
+        OUTPUT JSON: { 
+          "script": "...", 
+          "questions": [{ "id": 1, "text": "...", "options": ["A) ...", "B) ...", "C) ..."], "correct": "..." }, ...], 
+          "answerKey": { "1": "...", "2": "...", ... } 
+        }`;
+
+    case 'reading':
+        const passage = currentContent.reading.structure.passages[sectionIndex];
+        return `You are an IELTS Reading examiner. Generate a COMPLETE IELTS Reading passage with its questions.
+        Passage Title: "${passage.title}"
+        Passage Topic: "${passage.topic}"
+        Question Count: ${passage.questionCount}
+        Passage Number: ${sectionIndex + 1}
+        Difficulty: ${difficulty} (${difficultyContext})
+        ${personaInstruction}
+        
+        Requirements:
+        1. Generate a high-quality academic or general training passage (approx. 700-900 words).
+        2. Generate ${passage.questionCount} high-quality IELTS questions based STRICTLY on the text.
+        3. Use appropriate question types as planned in the structure (e.g., T/F/NG, Multiple Choice, Matching).
+        4. The response MUST be a valid JSON object.
+        
+        OUTPUT JSON: { 
+          "text": "...", 
+          "questions": [{ "id": 1, "text": "...", "options": ["...", "..."], "correct": "..." }, ...], 
+          "answerKey": { "1": "...", "2": "...", ... } 
+        }`;
+
+    case 'speaking':
+        if (sectionIndex === 0) { // Part 1
+            return `You are an IELTS Speaking examiner. Generate ALL questions for Speaking Part 1.
+            Focus: ${currentContent.speaking.structure.part1.focus}
+            Difficulty: ${difficulty} (${difficultyContext})
+            
+            Requirements:
+            1. Generate 5-8 conversational questions about the focus topic.
+            2. Provide natural, Band 8.0-9.0 sample answers for each.
+            
+            OUTPUT JSON: { 
+                "questions": [{ "id": 1, "text": "...", "sampleAnswer": "..." }, ...],
+                "answerKey": { "q1": "...", ... }
+            }`;
+        } else if (sectionIndex === 1) { // Part 2
+            return `You are an IELTS Speaking examiner. Generate a professional IELTS Speaking Part 2 Cue Card.
+            Focus: ${currentContent.speaking.structure.part2.focus}
+            Difficulty: ${difficulty} (${difficultyContext})
+            
+            Requirements:
+            1. Include "Describe...", "You should say:", and 3-4 bullet points.
+            2. Provide a high-quality sample monologue (Band 8.0-9.0).
+            
+            OUTPUT JSON: { "topic": "...", "bullets": ["...", "...", "..."], "sampleAnswer": "..." }`;
+        } else if (sectionIndex === 2) { // Part 3
+            return `You are an IELTS Speaking examiner. Generate ALL questions for Speaking Part 3.
+            Focus: ${currentContent.speaking.structure.part3.focus}
+            Difficulty: ${difficulty} (${difficultyContext})
+            
+            Requirements:
+            1. Generate 4-6 abstract, discursive questions related to the focus.
+            2. Provide analytical Band 8.0-9.0 sample answers.
+            
+            OUTPUT JSON: { 
+                "questions": [{ "id": 1, "text": "...", "sampleAnswer": "..." }, ...],
+                "answerKey": { "q1": "...", ... }
+            }`;
+        }
+        return '';
+    default:
+        return '';
+  }
+}
+
 const getQuestionPrompt = (moduleName: string, testType: string, difficulty: string, currentContent: any, questionDetails: any, personaContext?: string) => {
   const { sectionIndex, questionIndex, passageTitle, taskType, partNumber } = questionDetails;
   
@@ -281,6 +381,94 @@ export async function POST(request: Request) {
       await pkg.save();
 
       return NextResponse.json({ success: true, data: moduleStructure });
+    }
+
+    if (action === 'generateSection') {
+      if (!packageId || !moduleName || !questionDetails) {
+        return NextResponse.json({ message: 'Package ID, Module Name, and Section Details required' }, { status: 400 });
+      }
+
+      const pkg = await IELTSContent.findById(packageId);
+      if (!pkg) {
+        return NextResponse.json({ message: 'Package not found' }, { status: 404 });
+      }
+
+      const systemPrompt = getSectionPrompt(moduleName, testType, difficulty, pkg.content, questionDetails);
+      
+      let targetModel = DEPLOYMENT_MISTRAL; // Default to Mistral for complex sections
+      const moduleKey = moduleName.toLowerCase();
+
+      if (moduleKey === 'speaking') {
+        targetModel = DEPLOYMENT_HIGH; // Use GPT-4o for speaking logic
+      } else if (moduleKey === 'writing') {
+        targetModel = DEPLOYMENT_HIGH;
+      }
+
+      const response = await client.chat.completions.create({
+        model: targetModel,
+        messages: [{ role: "system", content: systemPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 4000 // Increased for full sections
+      });
+
+      const sectionDataRaw = JSON.parse(response.choices[0].message.content || '{}');
+      
+      const updatedContent = { ...pkg.content };
+      const { sectionIndex } = questionDetails;
+
+      if (moduleKey === 'listening') {
+        if (!updatedContent.listening) updatedContent.listening = { sections: [] };
+        if (!updatedContent.listening.sections) updatedContent.listening.sections = [];
+        
+        updatedContent.listening.sections[sectionIndex] = {
+          ...updatedContent.listening.structure.sections[sectionIndex],
+          script: sectionDataRaw.script,
+          questions: sectionDataRaw.questions
+        };
+      } else if (moduleKey === 'reading') {
+        if (!updatedContent.reading) updatedContent.reading = { passages: [] };
+        if (!updatedContent.reading.passages) updatedContent.reading.passages = [];
+
+        updatedContent.reading.passages[sectionIndex] = {
+          ...updatedContent.reading.structure.passages[sectionIndex],
+          text: sectionDataRaw.text,
+          questions: sectionDataRaw.questions
+        };
+      } else if (moduleKey === 'speaking') {
+        if (!updatedContent.speaking) updatedContent.speaking = {};
+        const partKey = `part${sectionIndex + 1}`;
+        
+        if (sectionIndex === 1) { // Part 2 is an object
+          updatedContent.speaking[partKey] = {
+            topic: sectionDataRaw.topic,
+            bullets: sectionDataRaw.bullets,
+            sampleAnswer: sectionDataRaw.sampleAnswer
+          };
+        } else { // Part 1 and 3 are arrays of questions
+          updatedContent.speaking[partKey] = sectionDataRaw.questions.map((q: any) => ({
+            ...q,
+            sampleAnswer: q.sampleAnswer
+          }));
+        }
+      }
+
+      // Merge answer keys
+      if (sectionDataRaw.answerKey) {
+        if (!updatedContent.answerKey) updatedContent.answerKey = {};
+        if (!updatedContent.answerKey[moduleKey]) updatedContent.answerKey[moduleKey] = {};
+        
+        updatedContent.answerKey[moduleKey] = {
+          ...updatedContent.answerKey[moduleKey],
+          ...sectionDataRaw.answerKey
+        };
+      }
+      
+      pkg.content = updatedContent;
+      pkg.markModified('content');
+      await pkg.save();
+
+      return NextResponse.json({ success: true, data: sectionDataRaw });
     }
 
     if (action === 'generateQuestion') {

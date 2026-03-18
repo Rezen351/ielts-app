@@ -36,6 +36,8 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 
 ## Update Log
 ### [2026-03-19]
+- **Fix (Performance):** Resolved `Examiner` generation timeouts by migrating from per-question incremental generation to section-based bulk generation (10 questions at once for Listening/Reading). Drastically reduced Azure OpenAI API calls and Cosmos DB connection stress.
+- **Optimization:** Adjusted `getSectionPrompt` in `api/generate/examiner/route.ts` and rendering logic in `dashboard/examiner/page.tsx` to fully support object-based section data formats.
 - **Multi-Model Orchestration 2.0:** Implemented a high-efficiency model routing strategy for optimal cost/performance:
   - **Phi-4 (DEPLOYMENT_PHI):** Used for lightning-fast JSON structure generation and short Speaking Part 1/3 questions.
   - **Mistral Large (DEPLOYMENT_MISTRAL):** Leveraged for long-form academic coherence in Reading passages and Listening scripts.
