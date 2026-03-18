@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { 
@@ -12,6 +15,15 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   const features = [
     { 
       title: "Listening", 
@@ -62,12 +74,20 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild className="font-semibold text-slate-600">
-              <Link href="/auth/login">Login</Link>
-            </Button>
-            <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full px-6">
-              <Link href="/auth/signup">Get Started</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full px-6">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild className="font-semibold text-slate-600">
+                  <Link href="/auth/login">Login</Link>
+                </Button>
+                <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full px-6">
+                  <Link href="/auth/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -91,8 +111,8 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Button size="lg" className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-2xl shadow-xl shadow-blue-200" asChild>
-              <Link href="/auth/signup" className="flex items-center gap-2">
-                Start Learning Now <ArrowRight className="w-5 h-5" />
+              <Link href={isLoggedIn ? "/dashboard" : "/auth/signup"} className="flex items-center gap-2">
+                {isLoggedIn ? "Go to Dashboard" : "Start Learning Now"} <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="h-14 px-8 border-slate-200 text-slate-600 text-lg font-bold rounded-2xl hover:bg-slate-50">
