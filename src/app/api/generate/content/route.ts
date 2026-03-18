@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       'Target Band 6.5-7.5: Standard IELTS difficulty with a mix of direct and indirect information, and some complex sentence structures.';
 
     if (module === 'Reading') {
-      // Mistral is excellent for long, coherent academic passages
+      // Mistral Large is world-class for long-form academic coherence
       selectedModel = DEPLOYMENT_MISTRAL; 
       systemPrompt = `You are a professional IELTS Reading content creator. Generate a unique IELTS Reading passage and 10 questions based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}).
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         questions: [{ id: number, text: string, options: [string], correct: string }] 
       }`;
     } else if (module === 'Writing') {
-      // GPT-4o is better for generating high-quality sample answers that follow Band 9 descriptors
+      // GPT-4o is superior for generating Band 9 sample answers
       selectedModel = DEPLOYMENT_HIGH;
       systemPrompt = `You are a professional IELTS Writing content creator. Generate a unique IELTS Writing Task 2 prompt based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}). 
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         sampleAnswer: string
       }`;
     } else if (module === 'Listening') {
-      // Mistral handles long dialogues and monologue scripts with high naturalness
+      // Mistral Large handles natural dialogues and monologue scripts with high realism
       selectedModel = DEPLOYMENT_MISTRAL;
       systemPrompt = `You are a professional IELTS Listening content creator. Generate a unique IELTS Listening Section 3 or 4 script and 10 questions based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}). 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         questions: [{ id: number, text: string, options: [string], correct: string }] 
       }`;
     } else if (module === 'Speaking') {
-      // Phi-4 is excellent for generating high-quality interview questions
+      // Phi-4 is hyper-efficient and accurate for short conversational question generation
       selectedModel = DEPLOYMENT_PHI;
       systemPrompt = `You are a professional IELTS Speaking examiner. Generate 5 unique IELTS Speaking Part 1 questions based on the topic "${topic}".
       Difficulty: ${difficulty} (${difficultyContext}). 
@@ -109,7 +109,8 @@ export async function POST(request: Request) {
     const response = await client.chat.completions.create({
       model: selectedModel,
       messages: [{ role: "system", content: systemPrompt }],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      max_tokens: selectedModel === DEPLOYMENT_PHI ? 1000 : 4000 
     });
 
     const generatedContent = JSON.parse(response.choices[0].message.content || "{}");

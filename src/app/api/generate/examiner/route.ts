@@ -258,11 +258,11 @@ export async function POST(request: Request) {
 
       const systemPrompt = getModuleStructurePrompt(moduleName, testType, difficulty);
       const response = await client.chat.completions.create({
-        model: DEPLOYMENT_PHI, // Phi-4 is highly efficient for structure generation
+        model: DEPLOYMENT_PHI, // Phi-4 is hyper-efficient for JSON structure generation
         messages: [{ role: "system", content: systemPrompt }],
         response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 1000 // Structure should be small
+        temperature: 0.1, // Lower temperature for structure consistency
+        max_tokens: 1000
       });
 
       const moduleStructure = JSON.parse(response.choices[0].message.content || '{}');
@@ -295,18 +295,18 @@ export async function POST(request: Request) {
 
       const systemPrompt = getQuestionPrompt(moduleName, testType, difficulty, pkg.content, questionDetails);
       
-      // Select model based on complexity of task
+      // OPTIMAL MULTI-MODEL ORCHESTRATION STRATEGY
       let targetModel = DEPLOYMENT_MINI;
       const moduleKey = moduleName.toLowerCase();
 
       if (moduleKey === 'writing' || (moduleKey === 'speaking' && questionDetails.partNumber === 2)) {
-        // Prompts and Cue Cards need high quality GPT-4o
+        // Complex academic writing and cue card storytelling require GPT-4o (High)
         targetModel = DEPLOYMENT_HIGH;
       } else if (moduleKey === 'reading' || moduleKey === 'listening') {
-        // Complex passages and scripts benefit from Mistral
+        // Mistral Large is world-class at long-form coherence and academic passages
         targetModel = DEPLOYMENT_MISTRAL;
       } else if (moduleKey === 'speaking' && (questionDetails.partNumber === 1 || questionDetails.partNumber === 3)) {
-        // Phi-4 is excellent for short conversational instruction following
+        // Phi-4 is excellent for short, direct conversational prompts
         targetModel = DEPLOYMENT_PHI;
       }
 
@@ -315,7 +315,7 @@ export async function POST(request: Request) {
         messages: [{ role: "system", content: systemPrompt }],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: targetModel === DEPLOYMENT_PHI ? 1000 : (targetModel === DEPLOYMENT_MINI ? 1000 : 2000)
+        max_tokens: targetModel === DEPLOYMENT_PHI ? 1000 : 2500
       });
 
       const questionDataRaw = JSON.parse(response.choices[0].message.content || '{}');

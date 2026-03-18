@@ -1,48 +1,51 @@
-# Project Context: IELTS Prep App (Next.js + Azure AI)
+#Project Context: IELTS Prep App (Next.js + Azure AI)
 
-You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner**. You are assisting a Physics Engineering student in building a high-performance IELTS training platform.
+You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner**. You are assisting a Physics Engineering student in building a high-performance, automated IELTS training platform.
 
 ## Technical Stack
 - **Framework:** Next.js (App Router), TypeScript, Tailwind CSS.
 - **Backend/Hosting:** Azure Static Web Apps (Hybrid Mode).
 - **Database:** Azure Cosmos DB (MongoDB API) with Mongoose.
-- **AI Integration:** - Azure OpenAI (GPT-4o-mini) for evaluation and chat.
-  - Azure AI Speech for Text-to-Speech (Listening) and Speech-to-Text (Speaking).
+- **AI Integration:** - Azure OpenAI (GPT-4o-mini) for evaluation.
+  - Azure AI Speech for TTS/STT.
+  - Azure AI Translator for multilingual support.
 - **Environment:** WSL (Ubuntu) on Windows.
 
-## Coding Standards
+## Workflow & Consistency (STRICT)
+1. **The TODO Protocol:** Before starting any task or generating code, ALWAYS check the `TODO.md` file. 
+   - If there are unfinished tasks, prioritize completing them before moving to new features.
+   - Update the `TODO.md` immediately after a task is completed or if a new sub-task is discovered.
+2. **Context Continuity:** Ensure every new piece of code is aware of previous implementations to maintain a unified architecture.
+
+## Coding Standards & Effectiveness
+- **Clean Code (SOLID):** Functions must be small, single-responsibility, and easy to test.
+- **Zero Waste Policy:** Strictly avoid and remove "dead code". 
+   - No unused imports, variables, or functions.
+   - If a refactor makes a previous function obsolete, delete it immediately.
 - **Security First:** Never hardcode API Keys. Always use `process.env`.
-- **Serverless Ready:** Database connections must use a global cached pattern (singleton) to prevent connection leaks in Azure Functions.
-- **Strict Types:** Always use TypeScript interfaces for API responses and Mongoose schemas.
-- **IELTS Accuracy:** Evaluation logic must strictly follow the official IELTS Band Descriptors (1.0 - 9.0) for Writing and Speaking (Fluency, Lexical Resource, Grammatical Range, Pronunciation).
+- **Serverless Optimization:** Database connections must use a global cached pattern (singleton).
+- **Strict Types:** No `any`. Use TypeScript interfaces for everything.
 
-## File Structure Preferences
-- API Routes: `src/app/api/[route]/route.ts`
-- Shared Components: `src/components/`
-- DB Logic: `src/lib/mongodb.ts`
-- Types: `src/types/`
+## IELTS Accuracy
+- Evaluation logic must strictly follow the official IELTS Band Descriptors (1.0 - 9.0).
+- Focus on: Lexical Resource, Grammatical Range, Coherence, and Pronunciation.
 
-## Automation & Workflow
-- **Post-Fix Verification:** Every time a bug is fixed or a feature is implemented, you **MUST** run `npm run build` to ensure no build errors exist.
-- **Git Protocol:** After a successful build, automatically `git add`, `git commit` (with a clear, concise message), and `git push` to GitHub.
-- **Update Tracking:** Maintain an "Update Log" at the end of this file to track major changes and fixes.
+## Automation & Post-Fix
+- **Verification:** After every fix, verify the build (`npm run build`).
+- **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
 ## Update Log
 ### [2026-03-19]
-- **UI/UX:** Completely redesigned the Landing Page (`page.tsx`) with a stunning, modern dark-mode aesthetic, featuring animated gradients, glassmorphism, and dynamic scroll effects.
-- **Feature:** Introduced **AI Persona Context**. 
-  - Added `occupation`, `hobbies`, and `goalBand` to the User model.
-  - Built a new "Persona Details" section in the Dashboard Settings.
-  - Integrated persona data into `api/generate/content` and `api/generate/examiner` to ensure AI-generated Reading passages, Speaking questions, and Writing prompts are highly tailored to the user's background.
-- **Feature:** Implemented **Multi-Model Orchestration Strategy**.
-  - **Mistral Large:** Used for high-quality Reading passages and Listening scripts.
-  - **GPT-4o (High):** Used for Writing/Speaking evaluation and Band 9 sample answers.
-  - **Phi-4 Mini:** Used for efficient Module Structure generation and Speaking Part 1/3 questions.
-  - **GPT-4o-mini:** Used for general tasks and fallback.
-- **Fix:** Resolved issue where "Goal Band" settings would reset to 5.0 after saving by enforcing consistent decimal formatting (e.g., '9.0') between React state and HTML Select options.
-- **Fix:** Enhanced evaluation logic to strictly follow official IELTS Band Descriptors (0-9) with criteria justifications.
-- **Fix:** Resolved TypeScript build error in `dashboard/page.tsx` related to `sidebarLinks`.
-- **Optimization:** Refined all generation prompts to include specific difficulty contexts (Easy/Medium/Hard) mapped to Target Bands.
+- **Multi-Model Orchestration 2.0:** Implemented a high-efficiency model routing strategy for optimal cost/performance:
+  - **Phi-4 (DEPLOYMENT_PHI):** Used for lightning-fast JSON structure generation and short Speaking Part 1/3 questions.
+  - **Mistral Large (DEPLOYMENT_MISTRAL):** Leveraged for long-form academic coherence in Reading passages and Listening scripts.
+  - **GPT-4o (DEPLOYMENT_HIGH):** Reserved for high-stakes evaluation, complex Writing tasks, and Band 9 sample answers.
+  - **GPT-4o-mini (DEPLOYMENT_MINI):** Default general-purpose fallback.
+- **Fix (Azure OpenAI):** Updated API version to `2024-12-01-preview` and decoupled the deployment from the client constructor to allow dynamic model switching (fixed "0 traffic" issue on GPT-4o).
+- **Fix (Database):** Resolved `PoolClearedOnNetworkError` by increasing Cosmos DB connection timeouts (`socketTimeoutMS`: 120s, `serverSelectionTimeoutMS`: 20s) and adding `heartbeatFrequencyMS` for better stability during long LLM calls.
+- **Fix (API):** Fixed a potential JSON parsing error in `api/evaluate/examiner` by ensuring `rawScore` is returned as a string (e.g., "32/40").
+- **UI/UX:** Completely redesigned the Landing Page (`page.tsx`) with a stunning, modern dark-mode aesthetic.
+- **Feature:** Introduced **AI Persona Context** for highly tailored test content.
 - **Workflow:** Automated the process of updating this log and pushing to GitHub after successful builds.
 
 ### [2026-03-18]

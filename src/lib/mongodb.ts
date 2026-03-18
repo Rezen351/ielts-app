@@ -31,9 +31,11 @@ async function dbConnect() {
     // Opsi khusus untuk Azure Cosmos DB for MongoDB agar lebih stabil
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000, // 10 detik
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 20000, // 20 detik
+      socketTimeoutMS: 120000, // 120 detik (long LLM calls)
+      connectTimeoutMS: 20000,
+      heartbeatFrequencyMS: 10000, // 10 detik keep-alive
+      retryWrites: true,
       // Cosmos DB memerlukan SSL/TLS
       tls: true,
       minPoolSize: 1,

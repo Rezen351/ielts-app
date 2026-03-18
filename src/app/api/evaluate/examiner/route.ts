@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import getClient, { deploymentName } from '@/lib/azure-openai';
+import getClient, { DEPLOYMENT_HIGH } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import TestResult from '@/models/TestResult';
 import User from '@/models/User';
@@ -49,7 +49,7 @@ SPEAKING: Fluency, pronunciation, development
     "speaking": 7.5
   },
   "criteriaBreakdown": {
-    "listening": {"rawScore": 32/40, "band": 7.0},
+    "listening": {"rawScore": "32/40", "band": 7.0},
     // ... per module
   },
   "detailedFeedback": "Strengths: ... Areas for improvement: ...",
@@ -62,7 +62,7 @@ Generated Test: ${JSON.stringify(generatedTest, null, 2)}
 Student Answers: ${JSON.stringify(userAnswers, null, 2)}`;
 
     const response = await client.chat.completions.create({
-      model: deploymentName,
+      model: DEPLOYMENT_HIGH,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
