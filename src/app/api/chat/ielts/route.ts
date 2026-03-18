@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import getClient, { deploymentName } from '@/lib/azure-openai';
+import getClient, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH, DEPLOYMENT_PHI } from '@/lib/azure-openai';
 
 export async function POST(request: Request) {
   try {
@@ -12,19 +12,41 @@ export async function POST(request: Request) {
       content: m.content
     }));
 
+    // Detect intent for Smart Routing
+    const lastMessage = formattedMessages[formattedMessages.length - 1]?.content?.toLowerCase() || "";
+    let selectedModel = DEPLOYMENT_MINI; // Default to mini (efficient)
+
+    if (lastMessage.includes("speaking test") || lastMessage.includes("simulasi speaking")) {
+      selectedModel = DEPLOYMENT_HIGH; // High-quality for mock interviews
+    } else if (lastMessage.includes("grammar") || lastMessage.includes("vocabulary") || lastMessage.includes("synonym")) {
+      selectedModel = DEPLOYMENT_PHI; // Ultra-fast and cheap for linguistic tasks
+    }
+
     const systemMessage = {
       role: "system",
-      content: "You are a professional IELTS Tutor. Help students with grammar, vocabulary, and IELTS strategies. Be encouraging and concise."
+      content: `You are a professional IELTS Tutor. 
+      Use standard Markdown for formatting:
+      - Use **bold** for emphasis or section titles.
+      - Use *italics* for highlighting specific terms.
+      - Use bullet points for lists of questions or tips.
+      
+      If the user wants to practice a "Speaking Test", act as an official examiner. 
+      If they ask about grammar/vocab, give concise academic explanations. 
+      Otherwise, help with IELTS strategies. Be encouraging and concise.`
     };
 
     const response = await client.chat.completions.create({
-      model: deploymentName,
+      model: selectedModel,
       messages: [systemMessage, ...formattedMessages],
     });
 
     const reply = response.choices[0].message.content;
 
-    return NextResponse.json({ success: true, reply });
+    return NextResponse.json({ 
+      success: true, 
+      reply,
+      modelUsed: selectedModel 
+    });
 
   } catch (error: any) {
     console.error('Chat API error:', error);
@@ -32,7 +54,6 @@ export async function POST(request: Request) {
       success: false, 
       message: 'AI Request Error',
       debug: {
-        deploymentUsed: deploymentName,
         errorType: error.code || error.name
       },
       error: error.message 

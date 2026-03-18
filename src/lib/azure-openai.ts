@@ -20,6 +20,8 @@ const apiKey = process.env.AZURE_OPENAI_API_KEY;
 // Deployment names from environment variables
 export const DEPLOYMENT_MINI = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_MINI || "gpt-4o-mini";
 export const DEPLOYMENT_HIGH = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_HIGH || "gpt-4o";
+export const DEPLOYMENT_MISTRAL = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_MISTRAL || "mistral-large-latest";
+export const DEPLOYMENT_PHI = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_PHI || "phi-4-mini-instruct";
 
 // Backward compatibility
 export const deploymentName = DEPLOYMENT_MINI;

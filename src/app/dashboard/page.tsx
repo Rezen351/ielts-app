@@ -56,14 +56,17 @@ export default function DashboardPage() {
     }
   };
 
+  const handleOpenChat = () => {
+    window.dispatchEvent(new CustomEvent('open-ielts-chat'));
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     window.location.href = '/auth/login';
   };
 
-const sidebarLinks = [
+  const sidebarLinks = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", active: true },
-    { label: "Study Chat", icon: MessageSquare, href: "/dashboard/chat" },
     { label: "Listening", icon: Headphones, href: "/dashboard/listening" },
     { label: "Reading", icon: BookOpen, href: "/dashboard/reading" },
     { label: "Writing", icon: PenTool, href: "/dashboard/writing" },
@@ -110,12 +113,19 @@ return (
                   ? "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700" 
                   : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
               }`} 
-              asChild
+              asChild={!!link.href}
             >
-              <Link href={link.href}>
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </Link>
+              {link.href ? (
+                <Link href={link.href}>
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </Link>
+              ) : (
+                <>
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </>
+              )}
             </Button>
           ))}
         </nav>
@@ -165,8 +175,11 @@ return (
                   <h2 className="text-2xl font-bold tracking-tight leading-snug">
                     {progress?.recommendation || "Loading your personalized plan..."}
                   </h2>
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold h-11" asChild>
-                    <Link href="/dashboard/chat">Discuss with AI <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold h-11" 
+                    onClick={handleOpenChat}
+                  >
+                    Discuss with AI <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
                 <Sparkles className="absolute top-8 right-8 w-24 h-24 text-white/5 rotate-12" />

@@ -31,6 +31,8 @@ export default function ListeningPage() {
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [dialogue, setDialogue] = useState<{voice: string, text: string}[]>([]);
+  const [currentLine, setCurrentLine] = useState(-1);
   const [topic, setTopic] = useState('Academic Life and Services');
   const [customTopic, setCustomTopic] = useState('');
   const [isSelecting, setIsSelecting] = useState(true);
@@ -38,6 +40,7 @@ export default function ListeningPage() {
   
   const playerRef = useRef<SpeechSDK.SpeakerAudioDestination | null>(null);
   const synthesizerRef = useRef<SpeechSDK.SpeechSynthesizer | null>(null);
+  const authRef = useRef<{token: string, region: string} | null>(null);
 
   useEffect(() => {
     fetchRecommendations();
@@ -75,10 +78,43 @@ export default function ListeningPage() {
       const result = await response.json();
       if (result.success) {
         setData(result.data);
+
+        // INTELLIGENT PARSER: Detect unique speakers and map to voices
+        const lines = result.data.script.split('\n').filter((l: string) => l.trim() !== '');
+        
+        const uniqueSpeakers: string[] = [];
+        let lastAssignedVoice = "en-GB-RyanNeural"; // Start opposite to Female
+        
+        const parsedDialogue = lines.map((line: string, index: number) => {
+          const match = line.match(/^([^:]+):/);
+          let speakerName = match ? match[1].trim().toLowerCase() : null;
+          let content = match ? line.substring(match[0].length).trim() : line.trim();
+
+          let voice = "";
+
+          if (speakerName) {
+            if (!uniqueSpeakers.includes(speakerName)) {
+              uniqueSpeakers.push(speakerName);
+            }
+            const speakerIndex = uniqueSpeakers.indexOf(speakerName);
+            // Speaker 1 = Libby, Speaker 2 = Ryan, etc.
+            voice = speakerIndex % 2 === 0 ? "en-GB-LibbyNeural" : "en-GB-RyanNeural";
+          } else {
+            // Fallback: Just alternate every line if no speaker tag found
+            voice = lastAssignedVoice === "en-GB-LibbyNeural" ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
+          }
+
+          lastAssignedVoice = voice;
+          return { voice, text: content };
+        });
+
+        setDialogue(parsedDialogue);
+
         setTopic(selectedTopic);
         setTimeLeft(1800);
         setAnswers({});
         setSubmitted(false);
+        setCurrentLine(-1);
       } else {
         toast.error("Failed to load content");
         setIsSelecting(true);
@@ -92,10 +128,19 @@ export default function ListeningPage() {
   };
 
   const stopAudio = () => {
+    if (synthesizerRef.current) {
+      try {
+        synthesizerRef.current.close();
+      } catch (e) {}
+      synthesizerRef.current = null;
+    }
     if (playerRef.current) {
-      playerRef.current.pause();
+      try {
+        playerRef.current.pause();
+      } catch (e) {}
     }
     setIsPlaying(false);
+    setCurrentLine(-1);
   };
 
   const handlePlayAudio = async () => {
@@ -104,43 +149,80 @@ export default function ListeningPage() {
       return;
     }
 
-    if (!data?.script) return;
+    if (!dialogue.length) return;
 
     try {
       const tokenRes = await fetch('/api/auth/speech-token');
       const { token, region } = await tokenRes.json();
 
       const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-      speechConfig.speechSynthesisVoiceName = "en-US-AndrewMultilingualNeural";
-      
+      // Important: Do NOT set a default voice name here when using multi-voice SSML
+      speechConfig.speechSynthesisLanguage = "en-GB"; 
+
       playerRef.current = new SpeechSDK.SpeakerAudioDestination();
       const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
-      
       synthesizerRef.current = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
 
       playerRef.current.onAudioEnd = () => {
         setIsPlaying(false);
+        stopAudio();
       };
 
+      // Helper to escape XML
+      const escapeXml = (unsafe: string) => {
+        return unsafe.replace(/[<>&"']/g, (c) => {
+          switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '"': return '&quot;';
+            case "'": return '&apos;';
+            default: return c;
+          }
+        });
+      };
+
+      // Generate ONE single SSML for the entire conversation
+      let ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-GB">`;
+      
+      dialogue.forEach((line) => {
+        // Move the break INSIDE the voice tag to avoid 'RootSpeak' children errors
+        ssml += `<voice name="${line.voice}">${escapeXml(line.text)}<break time="500ms"/></voice>`;
+      });
+      
+      ssml += `</speak>`;
+
+      console.log("[Listening] Starting multi-voice playback...");
       setIsPlaying(true);
-      synthesizerRef.current.speakTextAsync(
-        data.script,
+
+      synthesizerRef.current.speakSsmlAsync(
+        ssml,
         result => {
-          if (result.reason !== SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+          if (result.reason === SpeechSDK.ResultReason.Canceled) {
+            // Get error details directly from the result object
+            const errorDetails = (result as any).errorDetails || "No detailed error provided by Azure.";
+            console.error("Synthesis Canceled. Details:", errorDetails);
+            
+            // Log full result for deep debugging
+            console.log("[Speech Debug] Full Result Object:", result);
+            
             setIsPlaying(false);
           }
-          synthesizerRef.current?.close();
         },
         err => {
+          console.error("Speech Execution Error:", err);
           setIsPlaying(false);
-          synthesizerRef.current?.close();
         }
       );
 
     } catch (err) {
-      toast.error("Audio Error");
+      toast.error("Audio Initialization Error");
+      setIsPlaying(false);
     }
   };
+
+  // Remove the old playLine function as it's no longer needed
+
 
   useEffect(() => {
     if (timeLeft > 0 && !submitted && !loading && !isSelecting) {
