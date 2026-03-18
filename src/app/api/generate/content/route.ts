@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import client, { deploymentName } from '@/lib/azure-openai';
+import getClient, { deploymentName } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import IELTSContent from '@/models/IELTSContent';
 
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+    const client = getClient();
 
     // 1. Check if content exists in DB (to save costs)
     const existingContent = await IELTSContent.findOne({ module, topic, difficulty });

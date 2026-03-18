@@ -24,15 +24,35 @@ export const DEPLOYMENT_HIGH = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_HIGH || 
 // Backward compatibility
 export const deploymentName = DEPLOYMENT_MINI;
 
-console.log(`[Azure OpenAI] Base Endpoint: ${endpoint}`);
-console.log(`[Azure OpenAI] Mini Deployment: ${DEPLOYMENT_MINI}`);
-console.log(`[Azure OpenAI] High Deployment: ${DEPLOYMENT_HIGH}`);
+declare global {
+  // eslint-disable-next-line no-var
+  var azureClient: AzureOpenAI | undefined;
+}
 
-const client = new AzureOpenAI({
-  endpoint,
-  apiKey,
-  apiVersion: "2024-02-01",
-  deployment: DEPLOYMENT_MINI, // Default deployment
-});
+/**
+ * Lazy singleton client for Azure OpenAI
+ */
+const getClient = () => {
+  if (global.azureClient) return global.azureClient;
 
-export default client;
+  const rawEndpoint = process.env.AZURE_OPENAI_ENDPOINT || "https://ielts-app.openai.azure.com/";
+  const endpoint = cleanEndpoint(rawEndpoint);
+  const apiKey = process.env.AZURE_OPENAI_API_KEY;
+
+  if (!apiKey && process.env.NODE_ENV === "production" && !process.env.BUILD_PHASE) {
+    console.warn("[Azure OpenAI] WARNING: AZURE_OPENAI_API_KEY is missing at runtime.");
+  }
+
+  console.log(`[Azure OpenAI] Initializing client for ${endpoint}`);
+
+  global.azureClient = new AzureOpenAI({
+    endpoint,
+    apiKey: apiKey || "BUILD_PLACEHOLDER", // Avoid constructor crash during build
+    apiVersion: "2024-02-01",
+    deployment: DEPLOYMENT_MINI,
+  });
+
+  return global.azureClient;
+};
+
+export default getClient;

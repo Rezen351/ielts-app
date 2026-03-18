@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import client, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH } from '@/lib/azure-openai';
+import getClient, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import IELTSContent from '@/models/IELTSContent';
 
 export async function GET() {
   try {
     await dbConnect();
+    const client = getClient();
     // Return all fields including content, but without sorting to avoid indexing issues in Cosmos DB
     const packages = await IELTSContent.find({ module: 'Examiner' });
     return NextResponse.json({ success: true, packages });
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
     } = await request.json();
 
     await dbConnect();
+    const client = getClient();
 
     if (action === 'initPackage') {
       const packageCount = await IELTSContent.countDocuments({ module: 'Examiner' });

@@ -29,6 +29,7 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 
 ## Update Log
 ### [2026-03-18]
+- **Fix:** Implemented lazy-loading singleton pattern for Azure OpenAI client to resolve `Missing credentials` build errors in CI/CD (Azure Static Web Apps/Oryx).
 - **Fix:** Resolved `TypeError` in `examiner/route.ts` caused by uninitialized nested objects in writing/speaking generation.
 - **Feature:** Implemented **Hybrid Model Strategy**. Using GPT-4o for high-quality structure/prompts and GPT-4o-mini for cost-effective mass question generation.
 - **Optimization:** Added model selection logic in `azure-openai.ts` and API routes.

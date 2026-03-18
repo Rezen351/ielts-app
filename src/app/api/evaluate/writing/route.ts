@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import client, { deploymentName } from '@/lib/azure-openai';
+import getClient, { deploymentName } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import TestResult from '@/models/TestResult';
 import User from '@/models/User';
@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+    const client = getClient();
     const user = userId ? await User.findById(userId) : null;
     const targetLang = user?.nativeLanguage || 'en';
 

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import client, { deploymentName } from '@/lib/azure-openai';
+import getClient, { deploymentName } from '@/lib/azure-openai';
 
 export async function GET() {
   try {
+    const client = getClient();
     const systemPrompt = `Generate a list of 12 diverse IELTS study topics (3 for each module: Listening, Reading, Writing, Speaking). 
     The topics should be realistic and common in IELTS exams.
     Format as JSON: { 

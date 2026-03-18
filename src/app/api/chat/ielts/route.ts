@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import client, { deploymentName } from '@/lib/azure-openai';
+import getClient, { deploymentName } from '@/lib/azure-openai';
 
 export async function POST(request: Request) {
   try {
     const { messages } = await request.json();
+    const client = getClient();
 
     // Pastikan pesan diformat dengan benar (hanya role dan content)
     const formattedMessages = messages.map((m: any) => ({
