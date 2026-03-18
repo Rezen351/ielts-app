@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import { 
@@ -16,7 +18,8 @@ import {
   TrendingUp,
   Volume2,
   Eye,
-  EyeOff
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 
 export default function SpeakingPage() {
@@ -27,19 +30,19 @@ export default function SpeakingPage() {
   const [feedback, setFeedback] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(true);
+  const [topic, setTopic] = useState('');
+  const [customTopic, setCustomTopic] = useState('');
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
   
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
-
-  const questions = [
-    "Could you tell me your full name, please?",
-    "Do you work or are you a student?",
-    "What do you like most about your hometown?",
-    "Do you think it's important to protect the environment?"
-  ];
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
+    fetchRecommendations();
     
     return () => {
       if (recognizerRef.current) {
@@ -47,6 +50,53 @@ export default function SpeakingPage() {
       }
     };
   }, []);
+
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch('/api/recommendations/topics');
+      const result = await response.json();
+      if (result.success) {
+        setRecommendedTopics(result.topics.Speaking || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommendations");
+    }
+  };
+
+  const startPractice = async (selectedTopic: string) => {
+    setGeneratingQuestions(true);
+    setIsSelecting(false);
+    try {
+      const speakingProgress = user?.progress?.Speaking || { difficulty: 'Medium' };
+      const difficulty = speakingProgress.difficulty;
+
+      const response = await fetch('/api/generate/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: 'Speaking',
+          topic: selectedTopic,
+          difficulty: difficulty
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setQuestions(result.data.questions);
+        setTopic(selectedTopic);
+        setCurrentPart(0);
+        setTranscript('');
+        setFeedback(null);
+      } else {
+        toast.error("Failed to load questions");
+        setIsSelecting(true);
+      }
+    } catch (err) {
+      toast.error("Network error");
+      setIsSelecting(true);
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
 
   const startStreaming = async () => {
     try {
@@ -116,12 +166,79 @@ export default function SpeakingPage() {
     setShowTranslation(false);
   };
 
+  if (isSelecting) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-2xl w-full space-y-8">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 bg-violet-100 rounded-[24px] flex items-center justify-center text-violet-600 mx-auto mb-4">
+              <Mic className="w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Speaking Coach</h1>
+            <p className="text-slate-500 font-medium">Generate IELTS Speaking Part 1 questions based on your interest.</p>
+          </div>
+
+          <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Topic</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="e.g., Photography, Hometown, Childhood, Future Plans..." 
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 focus-visible:ring-violet-600"
+                />
+                <Button 
+                  onClick={() => startPractice(customTopic)}
+                  disabled={!customTopic.trim() || generatingQuestions}
+                  className="h-12 px-6 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl"
+                >
+                  {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
+              <div className="flex flex-wrap gap-2">
+                {recommendedTopics.map((t) => (
+                  <Button 
+                    key={t}
+                    variant="outline" 
+                    onClick={() => startPractice(t)}
+                    disabled={generatingQuestions}
+                    className="rounded-full border-slate-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 font-bold text-xs"
+                  >
+                    <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </Card>
+          
+          <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-xs uppercase tracking-widest">
+            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-4 h-4" /> Back to Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (generatingQuestions) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI is preparing your interview questions...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /></Link>
+          <Button variant="ghost" size="icon" onClick={() => setIsSelecting(true)} className="rounded-full">
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-violet-600" />
@@ -129,7 +246,7 @@ export default function SpeakingPage() {
           </div>
         </div>
         <Badge className="bg-violet-50 text-violet-600 border-violet-100 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
-          Part 1: Introduction
+          Topic: {topic.toUpperCase()}
         </Badge>
       </header>
 
@@ -161,6 +278,13 @@ export default function SpeakingPage() {
             )}
           </div>
         </Card>
+
+        {isRecording && transcript && (
+          <div className="text-center p-8 animate-in fade-in duration-500">
+             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Transcription</p>
+             <p className="text-xl font-medium text-slate-700 italic leading-relaxed">"{transcript}..."</p>
+          </div>
+        )}
 
         {(loading || feedback) && (
           <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">

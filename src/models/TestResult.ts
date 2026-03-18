@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 export interface ITestResult extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
-  module: 'Listening' | 'Reading' | 'Writing' | 'Speaking';
+  packageId?: mongoose.Types.ObjectId;
+  module: 'Listening' | 'Reading' | 'Writing' | 'Speaking' | 'Examiner';
   topic: string;
   score: number;
   maxScore: number;
@@ -16,10 +17,14 @@ const TestResultSchema = new mongoose.Schema<ITestResult>({
     ref: 'User',
     required: true,
   },
+  packageId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'IELTSContent',
+  },
   module: {
     type: String,
     required: true,
-    enum: ['Listening', 'Reading', 'Writing', 'Speaking'],
+    enum: ['Listening', 'Reading', 'Writing', 'Speaking', 'Examiner'],
   },
   topic: {
     type: String,

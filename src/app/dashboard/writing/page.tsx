@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   PenTool, 
@@ -15,7 +17,8 @@ import {
   TrendingUp,
   Languages,
   Eye,
-  EyeOff
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 
 export default function WritingPage() {
@@ -24,13 +27,64 @@ export default function WritingPage() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [showTranslation, setShowTranslation] = useState(false);
-
-  const prompt = "Some people believe that it is best to accept a bad situation, such as an unsatisfactory job or shortage of money. Others argue that it is better to try and improve such situations. Discuss both these views and give your own opinion.";
+  const [isSelecting, setIsSelecting] = useState(true);
+  const [topic, setTopic] = useState('');
+  const [customTopic, setCustomTopic] = useState('');
+  const [promptData, setPromptData] = useState<any>(null);
+  const [generatingPrompt, setGeneratingPrompt] = useState(false);
+  const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
+    fetchRecommendations();
   }, []);
+
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch('/api/recommendations/topics');
+      const result = await response.json();
+      if (result.success) {
+        setRecommendedTopics(result.topics.Writing || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommendations");
+    }
+  };
+
+  const startPractice = async (selectedTopic: string) => {
+    setGeneratingPrompt(true);
+    setIsSelecting(false);
+    try {
+      const writingProgress = user?.progress?.Writing || { difficulty: 'Medium' };
+      const difficulty = writingProgress.difficulty;
+
+      const response = await fetch('/api/generate/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: 'Writing',
+          topic: selectedTopic,
+          difficulty: difficulty
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setPromptData(result.data);
+        setTopic(selectedTopic);
+        setEssay('');
+        setAnalysis(null);
+      } else {
+        toast.error("Failed to load prompt");
+        setIsSelecting(true);
+      }
+    } catch (err) {
+      toast.error("Network error");
+      setIsSelecting(true);
+    } finally {
+      setGeneratingPrompt(false);
+    }
+  };
 
   const handleEvaluate = async () => {
     if (!essay || essay.split(' ').length < 10) {
@@ -48,7 +102,7 @@ export default function WritingPage() {
         body: JSON.stringify({
           essay,
           taskType: 'Writing Task 2',
-          prompt,
+          prompt: promptData.prompt,
           userId: user?.id
         }),
       });
@@ -68,12 +122,79 @@ export default function WritingPage() {
     }
   };
 
+  if (isSelecting) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-2xl w-full space-y-8">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 bg-sky-100 rounded-[24px] flex items-center justify-center text-sky-600 mx-auto mb-4">
+              <PenTool className="w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Writing Practice</h1>
+            <p className="text-slate-500 font-medium">Choose a topic to generate a unique essay prompt.</p>
+          </div>
+
+          <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Topic</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="e.g., Artificial Intelligence, Global Warming, Art Funding..." 
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 focus-visible:ring-sky-600"
+                />
+                <Button 
+                  onClick={() => startPractice(customTopic)}
+                  disabled={!customTopic.trim() || generatingPrompt}
+                  className="h-12 px-6 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl"
+                >
+                  {generatingPrompt ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
+              <div className="flex flex-wrap gap-2">
+                {recommendedTopics.map((t) => (
+                  <Button 
+                    key={t}
+                    variant="outline" 
+                    onClick={() => startPractice(t)}
+                    disabled={generatingPrompt}
+                    className="rounded-full border-slate-200 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 font-bold text-xs"
+                  >
+                    <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </Card>
+          
+          <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-xs uppercase tracking-widest">
+            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-4 h-4" /> Back to Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (generatingPrompt) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 text-sky-600 animate-spin" />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generating prompt...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /></Link>
+          <Button variant="ghost" size="icon" onClick={() => setIsSelecting(true)} className="rounded-full">
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-blue-600" />
@@ -88,11 +209,14 @@ export default function WritingPage() {
             <Card className="border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white">
               <CardHeader className="bg-slate-50/30 border-b border-slate-100 p-8">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-blue-50 text-blue-600 border-blue-100 uppercase text-[10px]">Task 2</Badge>
+                  <Badge className="bg-blue-50 text-blue-600 border-blue-100 uppercase text-[10px]">TASK 2: {topic.toUpperCase()}</Badge>
                 </div>
                 <CardTitle className="text-lg font-bold leading-relaxed text-slate-800">
-                  {prompt}
+                  {promptData?.prompt}
                 </CardTitle>
+                <CardDescription className="text-xs font-medium text-slate-400 mt-2">
+                  {promptData?.instructions}
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Textarea 
@@ -120,14 +244,12 @@ export default function WritingPage() {
           <div className="space-y-6">
             {analysis && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Score Card */}
                 <Card className="border-slate-200 shadow-xl shadow-blue-50/50 rounded-3xl overflow-hidden border-t-4 border-t-blue-600 bg-white">
                   <CardHeader className="text-center p-8 bg-blue-50/30">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Predicted Band</p>
                     <div className="text-6xl font-black text-blue-600 tracking-tighter">{analysis.overallScore}</div>
                   </CardHeader>
                   <CardContent className="p-8 space-y-6">
-                    {/* Translation Toggle */}
                     {user?.nativeLanguage !== 'en' && (
                       <Button 
                         variant="outline" 
@@ -135,7 +257,7 @@ export default function WritingPage() {
                         onClick={() => setShowTranslation(!showTranslation)}
                         className="w-full rounded-xl border-slate-200 text-slate-600 font-bold text-[10px] uppercase tracking-widest gap-2"
                       >
-                        {showTranslation ? <><EyeOff className="w-3 h-3" /> Hide Translation</> : <><Eye className="w-3 h-3" /> Show Translation ({user?.nativeLanguage.toUpperCase()})</>}
+                        {showTranslation ? <><EyeOff className="w-3 h-3" /> Original</> : <><Eye className="w-3 h-3" /> Translation</>}
                       </Button>
                     )}
 
@@ -159,6 +281,9 @@ export default function WritingPage() {
                     </div>
                   </CardContent>
                 </Card>
+                <Button variant="outline" onClick={() => setIsSelecting(true)} className="w-full rounded-xl py-6 border-slate-200 text-slate-600 font-bold">
+                  Try New Prompt
+                </Button>
               </div>
             )}
 

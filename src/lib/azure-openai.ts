@@ -16,18 +16,23 @@ function cleanEndpoint(url: string) {
 const rawEndpoint = process.env.AZURE_OPENAI_ENDPOINT || "https://ielts-app.openai.azure.com/";
 const endpoint = cleanEndpoint(rawEndpoint);
 const apiKey = process.env.AZURE_OPENAI_API_KEY;
-const deployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o-mini";
 
-export const deploymentName = deployment;
+// Deployment names from environment variables
+export const DEPLOYMENT_MINI = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_MINI || "gpt-4o-mini";
+export const DEPLOYMENT_HIGH = process.env.AZURE_OPENAI_DEPLOYMENT_NAME_HIGH || "gpt-4o";
+
+// Backward compatibility
+export const deploymentName = DEPLOYMENT_MINI;
 
 console.log(`[Azure OpenAI] Base Endpoint: ${endpoint}`);
-console.log(`[Azure OpenAI] Deployment: ${deployment}`);
+console.log(`[Azure OpenAI] Mini Deployment: ${DEPLOYMENT_MINI}`);
+console.log(`[Azure OpenAI] High Deployment: ${DEPLOYMENT_HIGH}`);
 
 const client = new AzureOpenAI({
   endpoint,
   apiKey,
   apiVersion: "2024-02-01",
-  deployment,
+  deployment: DEPLOYMENT_MINI, // Default deployment
 });
 
 export default client;

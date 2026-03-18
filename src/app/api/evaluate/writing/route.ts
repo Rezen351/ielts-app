@@ -62,6 +62,28 @@ export async function POST(request: Request) {
         },
         date: new Date()
       });
+
+      // Update user progress
+      const moduleResults = await TestResult.find({ userId: user._id, module: moduleType });
+      const numTests = moduleResults.length;
+      const avgScore = moduleResults.reduce((acc, r) => acc + r.score, 0) / numTests;
+
+      let currentProgress = user.progress.get(moduleType) || { difficulty: 'Easy', level: 1 };
+
+      if (avgScore >= 7.5 && numTests >= 3) {
+        currentProgress.level += 1;
+        if (currentProgress.level >= 5) {
+          if (currentProgress.difficulty === 'Easy') {
+            currentProgress.difficulty = 'Medium';
+            currentProgress.level = 1;
+          } else if (currentProgress.difficulty === 'Medium') {
+            currentProgress.difficulty = 'Hard';
+            currentProgress.level = 1;
+          }
+        }
+        user.progress.set(moduleType, currentProgress);
+        await user.save();
+      }
     }
 
     return NextResponse.json({ 

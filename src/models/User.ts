@@ -5,6 +5,12 @@ export interface IUser extends mongoose.Document {
   email: string;
   password: string;
   nativeLanguage: string;
+  progress: {
+    [module: string]: {
+      difficulty: 'Easy' | 'Medium' | 'Hard';
+      level: number;
+    };
+  };
   createdAt: Date;
 }
 
@@ -30,6 +36,26 @@ const UserSchema = new mongoose.Schema<IUser>({
   nativeLanguage: {
     type: String,
     default: 'id', // Default to Indonesia
+  },
+  progress: {
+    type: Map,
+    of: {
+      difficulty: {
+        type: String,
+        enum: ['Easy', 'Medium', 'Hard'],
+        default: 'Easy',
+      },
+      level: {
+        type: Number,
+        default: 1,
+      },
+    },
+    default: {
+      Listening: { difficulty: 'Easy', level: 1 },
+      Reading: { difficulty: 'Easy', level: 1 },
+      Writing: { difficulty: 'Easy', level: 1 },
+      Speaking: { difficulty: 'Easy', level: 1 },
+    }
   },
   createdAt: {
     type: Date,

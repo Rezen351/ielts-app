@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import { 
@@ -18,7 +19,8 @@ import {
   Clock,
   Volume2,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 
 export default function ListeningPage() {
@@ -27,21 +29,38 @@ export default function ListeningPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [topic, setTopic] = useState('Academic Life and Services');
+  const [customTopic, setCustomTopic] = useState('');
+  const [isSelecting, setIsSelecting] = useState(true);
+  const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
   
   const playerRef = useRef<SpeechSDK.SpeakerAudioDestination | null>(null);
   const synthesizerRef = useRef<SpeechSDK.SpeechSynthesizer | null>(null);
 
   useEffect(() => {
-    fetchNewContent();
+    fetchRecommendations();
     return () => {
       stopAudio();
     };
   }, []);
 
-  const fetchNewContent = async () => {
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch('/api/recommendations/topics');
+      const result = await response.json();
+      if (result.success) {
+        setRecommendedTopics(result.topics.Listening || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recommendations");
+    }
+  };
+
+  const startPractice = async (selectedTopic: string) => {
     setLoading(true);
+    setIsSelecting(false);
     stopAudio();
     try {
       const response = await fetch('/api/generate/content', {
@@ -49,16 +68,24 @@ export default function ListeningPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           module: 'Listening',
-          topic: 'Academic Life and Services',
+          topic: selectedTopic,
           difficulty: 'Medium'
         }),
       });
       const result = await response.json();
       if (result.success) {
         setData(result.data);
+        setTopic(selectedTopic);
+        setTimeLeft(1800);
+        setAnswers({});
+        setSubmitted(false);
+      } else {
+        toast.error("Failed to load content");
+        setIsSelecting(true);
       }
     } catch (err) {
-      toast.error("Failed to load content");
+      toast.error("Network error");
+      setIsSelecting(true);
     } finally {
       setLoading(false);
     }
@@ -80,13 +107,11 @@ export default function ListeningPage() {
     if (!data?.script) return;
 
     try {
-      // 1. Get Token
       const tokenRes = await fetch('/api/auth/speech-token');
       const { token, region } = await tokenRes.json();
 
-      // 2. Setup Config
       const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-      speechConfig.speechSynthesisVoiceName = "en-US-AndrewMultilingualNeural"; // High quality male voice
+      speechConfig.speechSynthesisVoiceName = "en-US-AndrewMultilingualNeural";
       
       playerRef.current = new SpeechSDK.SpeakerAudioDestination();
       const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
@@ -101,32 +126,28 @@ export default function ListeningPage() {
       synthesizerRef.current.speakTextAsync(
         data.script,
         result => {
-          if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-            console.log("Synthesis finished.");
-          } else {
-            console.error("Speech synthesis cancelled or failed: " + result.errorDetails);
+          if (result.reason !== SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
             setIsPlaying(false);
           }
           synthesizerRef.current?.close();
         },
         err => {
-          console.error(err);
           setIsPlaying(false);
           synthesizerRef.current?.close();
         }
       );
 
     } catch (err) {
-      toast.error("Audio Error", { description: "Failed to initialize AI voice." });
+      toast.error("Audio Error");
     }
   };
 
   useEffect(() => {
-    if (timeLeft > 0 && !submitted && !loading) {
+    if (timeLeft > 0 && !submitted && !loading && !isSelecting) {
       const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
       return () => clearInterval(timer);
     }
-  }, [timeLeft, submitted, loading]);
+  }, [timeLeft, submitted, loading, isSelecting]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -152,7 +173,7 @@ export default function ListeningPage() {
         body: JSON.stringify({
           userId: user.id,
           module: 'Listening',
-          topic: 'Academic Life Conversation',
+          topic: topic,
           score: (correctCount / data.questions.length) * 9,
           maxScore: 9,
           data: { answers }
@@ -162,6 +183,64 @@ export default function ListeningPage() {
     
     toast.success("Listening Test Complete");
   };
+
+  if (isSelecting) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-2xl w-full space-y-8">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
+              <Headphones className="w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Listening Practice</h1>
+            <p className="text-slate-500 font-medium">Generate a unique listening scenario based on your choice.</p>
+          </div>
+
+          <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="e.g., Job Interview, Hotel Check-in, Campus Tour..." 
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                />
+                <Button 
+                  onClick={() => startPractice(customTopic)}
+                  disabled={!customTopic.trim() || loading}
+                  className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
+              <div className="flex flex-wrap gap-2">
+                {recommendedTopics.map((t) => (
+                  <Button 
+                    key={t}
+                    variant="outline" 
+                    onClick={() => startPractice(t)}
+                    disabled={loading}
+                    className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold text-xs"
+                  >
+                    <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </Card>
+          
+          <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-xs uppercase tracking-widest">
+            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-4 h-4" /> Back to Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -178,8 +257,8 @@ export default function ListeningPage() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="rounded-full">
-            <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /></Link>
+          <Button variant="ghost" size="icon" onClick={() => setIsSelecting(true)} className="rounded-full">
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
             <Headphones className="w-5 h-5 text-blue-500" />
@@ -205,10 +284,10 @@ export default function ListeningPage() {
               {isPlaying && <div className="absolute -inset-2 border-2 border-blue-400 rounded-[36px] animate-ping opacity-25"></div>}
             </div>
             <div className="flex-1 text-center md:text-left space-y-3">
-              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">Dynamic AI Content</Badge>
+              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">TOPIC: {topic.toUpperCase()}</Badge>
               <h2 className="text-2xl font-bold">Social & Academic Conversation</h2>
               <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                Listen to the recording and answer the questions. You can replay the audio if needed in this practice mode.
+                Listen to the recording and answer the questions.
               </p>
             </div>
             <Button 
@@ -219,18 +298,9 @@ export default function ListeningPage() {
               {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
             </Button>
           </div>
-          
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px]"></div>
         </Card>
 
         <div className="space-y-6 pb-24">
-          <div className="flex justify-between items-center px-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Questions 1-3</h3>
-            <Button variant="ghost" size="sm" onClick={fetchNewContent} className="text-slate-400 hover:text-blue-600 gap-2">
-              <RefreshCw className="w-3 h-3" /> New Script
-            </Button>
-          </div>
-          
           {data?.questions.map((q: any) => (
             <Card key={q.id} className={`border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white transition-all duration-500 ${submitted && (answers[q.id] === q.correct ? 'border-emerald-200 bg-emerald-50/30' : 'border-red-200 bg-red-50/30')}`}>
               <CardHeader className="p-8 pb-4">
@@ -256,29 +326,20 @@ export default function ListeningPage() {
                     </div>
                   ))}
                 </RadioGroup>
-                {submitted && answers[q.id] !== q.correct && (
-                  <div className="mt-4 text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-2">
-                    <CheckCircle2 className="w-3 h-3" /> Correct: {q.correct}
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))}
 
           {submitted && (
-            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl shadow-blue-200 animate-in zoom-in-95 duration-500">
-              <div className="w-20 h-20 bg-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <TrophyIcon className="w-10 h-10" />
-              </div>
+            <Card className="border-0 bg-blue-600 text-white rounded-[40px] p-12 text-center shadow-2xl shadow-blue-200">
               <h3 className="text-2xl font-black mb-2">Practice Complete</h3>
-              <p className="text-blue-100 mb-8 font-medium">Excellent work! Your listening skills are improving.</p>
               <div className="text-6xl font-black mb-8">{(score/data.questions.length * 9).toFixed(1)} <span className="text-xl opacity-50">Band</span></div>
               <div className="flex gap-4 justify-center">
                 <Button variant="secondary" className="rounded-full font-bold px-10 h-12 bg-white text-slate-900" asChild>
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>
-                <Button variant="outline" onClick={fetchNewContent} className="rounded-full font-bold px-10 h-12 border-white/20 text-white hover:bg-white/10">
-                  Try Another
+                <Button variant="outline" onClick={() => setIsSelecting(true)} className="rounded-full font-bold px-10 h-12 border-white/20 text-white hover:bg-white/10">
+                  Try New Topic
                 </Button>
               </div>
             </Card>
@@ -286,29 +347,5 @@ export default function ListeningPage() {
         </div>
       </main>
     </div>
-  );
-}
-
-function TrophyIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-    </svg>
   );
 }

@@ -9,6 +9,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { 
   MessageSquare, 
   ArrowLeft, 
@@ -36,9 +40,19 @@ export default function ChatPage() {
       timestamp: new Date()
     }
   ]);
-  const [input, setInput] = useState('');
+const [input, setInput] = useState('');
+  const [chatId, setChatId] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let storedChatId = localStorage.getItem('ielts-chat-id');
+    if (!storedChatId) {
+      storedChatId = Date.now().toString();
+      localStorage.setItem('ielts-chat-id', storedChatId);
+    }
+    setChatId(storedChatId);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -110,7 +124,7 @@ export default function ChatPage() {
 
       <main className="flex-1 overflow-hidden flex flex-col max-w-4xl mx-auto w-full p-4 md:p-8">
         <Card className="flex-1 flex flex-col border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-white">
-          <ScrollArea className="flex-1 p-6 md:p-8">
+<ScrollArea className="flex-1 p-4 sm:p-6 md:p-8 pr-4">
             <div className="space-y-6">
               {messages.map((m) => (
                 <div key={m.id} className={`flex gap-4 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -125,7 +139,32 @@ export default function ChatPage() {
                         ? "bg-slate-50 text-slate-800 rounded-tl-none border border-slate-100" 
                         : "bg-blue-600 text-white rounded-tr-none font-medium"
                     }`}>
-                      {m.content}
+<ReactMarkdown 
+  remarkPlugins={[remarkGfm]}
+  components={{
+    code({node, className, children, ...props}) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { ref, ...rest } = props as any;
+      const match = /language-(\w+)/.exec(className || '')
+      return match ? (
+        <SyntaxHighlighter
+          style={tomorrow as any}
+          language={match[1]}
+          PreTag="div"
+          {...rest}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code ref={ref} className={className} {...rest}>
+          {children}
+        </code>
+      )
+    }
+  }}
+>
+  {m.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}
+</ReactMarkdown>
                     </div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-2">
                       {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -156,7 +195,12 @@ export default function ChatPage() {
                 className="flex-1 h-14 rounded-2xl border-slate-200 bg-white pr-14 shadow-sm focus-visible:ring-blue-600"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
+}}
               />
               <Button 
                 size="icon" 

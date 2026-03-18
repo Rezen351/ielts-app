@@ -7,9 +7,13 @@ export async function POST(request: Request) {
   try {
     const { module, topic, difficulty } = await request.json();
 
+    if (!module || !topic) {
+      return NextResponse.json({ message: 'Module and Topic are required' }, { status: 400 });
+    }
+
     await dbConnect();
 
-    // 1. Check if content exists in DB
+    // 1. Check if content exists in DB (to save costs)
     const existingContent = await IELTSContent.findOne({ module, topic, difficulty });
     if (existingContent) {
       return NextResponse.json({ success: true, data: existingContent.content, fromCache: true });
@@ -18,17 +22,36 @@ export async function POST(request: Request) {
     // 2. Generate new content if not exists
     let systemPrompt = "";
     if (module === 'Reading') {
-      systemPrompt = `Generate an IELTS Reading passage and 3 multiple choice questions. 
-      Topic: ${topic}. Difficulty: ${difficulty}. 
-      Format as JSON: { title: string, passage: string, questions: [{ id: number, text: string, options: [string], correct: string }] }`;
+      systemPrompt = `You are a professional IELTS content creator. Generate a unique IELTS Reading passage and 3 multiple choice questions based on the topic "${topic}".
+      Difficulty: ${difficulty}. 
+      The passage should be approximately 300-400 words.
+      Format as JSON: { 
+        title: string, 
+        passage: string, 
+        questions: [{ id: number, text: string, options: [string], correct: string }] 
+      }`;
     } else if (module === 'Writing') {
-      systemPrompt = `Generate an IELTS Writing Task 2 prompt. 
-      Topic: ${topic}. Difficulty: ${difficulty}. 
-      Format as JSON: { taskType: string, prompt: string, instructions: string }`;
+      systemPrompt = `You are a professional IELTS content creator. Generate a unique IELTS Writing Task 2 prompt based on the topic "${topic}".
+      Difficulty: ${difficulty}. 
+      Format as JSON: { 
+        taskType: "Writing Task 2", 
+        prompt: string, 
+        instructions: string 
+      }`;
     } else if (module === 'Listening') {
-      systemPrompt = `Generate a script for an IELTS Listening Section 1 (Conversation) and 3 questions. 
-      Topic: ${topic}. Difficulty: ${difficulty}. 
-      Format as JSON: { script: string, questions: [{ id: number, text: string, options: [string], correct: string }] }`;
+      systemPrompt = `You are a professional IELTS content creator. Generate a unique IELTS Listening Section 1 script (a conversation between two people) and 3 multiple choice questions based on the topic "${topic}".
+      Difficulty: ${difficulty}. 
+      Format as JSON: { 
+        script: string, 
+        questions: [{ id: number, text: string, options: [string], correct: string }] 
+      }`;
+    } else if (module === 'Speaking') {
+      systemPrompt = `You are a professional IELTS content creator. Generate 4 unique IELTS Speaking Part 1 questions based on the topic "${topic}".
+      Difficulty: ${difficulty}. 
+      Format as JSON: { 
+        topic: string, 
+        questions: [string] 
+      }`;
     }
 
     const response = await client.chat.completions.create({
