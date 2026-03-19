@@ -131,73 +131,65 @@ export default function ReadingPage() {
       <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
         <div className="max-w-2xl w-full space-y-8">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-indigo-100 rounded-[24px] flex items-center justify-center text-indigo-600 mx-auto mb-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
               <BookOpen className="w-8 h-8" />
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reading Practice</h1>
             <p className="text-slate-500 font-medium">Select a topic or enter your own to generate a unique IELTS passage.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
-                      <div className="flex gap-2">
-                          <Input 
-                          placeholder="e.g., Archaeology, Space, Health..." 
-                          value={customTopic}
-                          onChange={(e) => setCustomTopic(e.target.value)}
-                          className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
-                          />
-                      </div>
-                  </div>
-                  <div className="space-y-4">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
-                      <select 
-                          value={difficulty} 
-                          onChange={(e) => setDifficulty(e.target.value as any)}
-                          className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
-                      >
-                          <option>Easy</option>
-                          <option>Medium</option>
-                          <option>Hard</option>
-                      </select>
-                  </div>
-              </div>
-
-              <Button 
-                  onClick={() => startPractice(customTopic)}
-                  disabled={!customTopic.trim() || loading}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
-              >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
-              </Button>
-
-              <div className="space-y-4">
-
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
-                <div className="flex flex-wrap gap-2">
-                  {recommendedTopics.map((t) => (
-                    <Button 
-                      key={t}
-                      variant="outline" 
-                      onClick={() => startPractice(t)}
-                      disabled={loading}
-                      className="rounded-full border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 font-bold text-xs"
-                    >
-                      <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
-                    </Button>
-                  ))}
-                  {recommendedTopics.length === 0 && (
-                    <div className="animate-pulse flex gap-2">
-                      {[1,2,3].map(i => <div key={i} className="h-8 w-24 bg-slate-100 rounded-full"></div>)}
+          <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                        placeholder="e.g., Archaeology, Space, Health..." 
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                        />
                     </div>
-                  )}
                 </div>
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
+                    <select 
+                        value={difficulty} 
+                        onChange={(e) => setDifficulty(e.target.value as any)}
+                        className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
+                    >
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
+            </div>
+
+            <Button 
+                onClick={() => startPractice(customTopic)}
+                disabled={!customTopic.trim() || loading}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
+            >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
+            </Button>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
+              <div className="flex flex-wrap gap-2">
+                {recommendedTopics.map((t) => (
+                  <Button 
+                    key={t}
+                    variant="outline" 
+                    onClick={() => startPractice(t)}
+                    disabled={loading}
+                    className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold text-xs"
+                  >
+                    <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
+                  </Button>
+                ))}
               </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
           
           <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-xs uppercase tracking-widest">
             <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-4 h-4" /> Back to Dashboard</Link>
@@ -210,7 +202,7 @@ export default function ReadingPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center px-6">
           AI is generating your unique IELTS passage...
         </p>
@@ -226,7 +218,7 @@ export default function ReadingPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
+            <BookOpen className="w-5 h-5 text-blue-600" />
             <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Reading Practice</h1>
           </div>
         </div>
@@ -235,7 +227,7 @@ export default function ReadingPage() {
             <Clock className="w-4 h-4" />
             {formatTime(timeLeft)}
           </div>
-          <Button onClick={handleSubmit} disabled={submitted} className="bg-indigo-600 hover:bg-indigo-700 rounded-full font-bold px-6">
+          <Button onClick={handleSubmit} disabled={submitted} className="bg-blue-600 hover:bg-blue-700 rounded-full font-bold px-6">
             Submit Test
           </Button>
         </div>
@@ -279,7 +271,7 @@ export default function ReadingPage() {
                 >
                   {q.options.map((opt: string) => (
                     <div key={opt} className="flex items-center space-x-3 space-y-2">
-                      <RadioGroupItem value={opt} id={`q${q.id}-${opt}`} className="text-indigo-600 border-slate-300" />
+                      <RadioGroupItem value={opt} id={`q${q.id}-${opt}`} className="text-blue-600 border-slate-300" />
                       <Label htmlFor={`q${q.id}-${opt}`} className={`text-sm font-medium ${submitted && opt === q.correct ? 'text-emerald-700 font-bold' : 'text-slate-600'}`}>
                         {opt}
                       </Label>
@@ -303,10 +295,10 @@ export default function ReadingPage() {
           ))}
 
           {submitted && (
-            <Card className="border-indigo-200 bg-slate-900 text-white rounded-[32px] p-10 text-center shadow-xl">
+            <Card className="border-blue-200 bg-slate-900 text-white rounded-[32px] p-10 text-center shadow-xl">
               <h3 className="text-xl font-bold mb-2">Test Completed!</h3>
               <p className="text-slate-400 mb-6 font-bold uppercase tracking-widest text-[10px]">Your dynamic score</p>
-              <div className="text-6xl font-black text-indigo-500 mb-8">{score} / {data.questions.length}</div>
+              <div className="text-6xl font-black text-blue-500 mb-8">{score} / {data.questions.length}</div>
               <div className="flex gap-4 justify-center">
                 <Button variant="secondary" className="rounded-full font-bold px-8 bg-white text-slate-900 hover:bg-slate-100" asChild>
                   <Link href="/dashboard">Return to Dashboard</Link>
