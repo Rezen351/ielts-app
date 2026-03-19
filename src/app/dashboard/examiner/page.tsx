@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Trophy, Play, CheckCircle2, Loader2, Download, History, Plus } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Trophy, 
+  Play, 
+  CheckCircle2, 
+  Loader2, 
+  Download, 
+  History, 
+  Plus, 
+  Volume2, 
+  Mic, 
+  Square,
+  Pause
+} from 'lucide-react';
 import Link from 'next/link';
+import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 
 interface UserAnswers {
   [module: string]: {
@@ -34,10 +49,23 @@ export default function ExaminerPage() {
   const [currentModule, setCurrentModule] = useState('Listening');
   const [savedPackages, setSavedPackages] = useState<any[]>([]);
 
+  // Speech Refs
+  const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
+  const playerRef = useRef<SpeechSDK.SpeakerAudioDestination | null>(null);
+  const synthesizerRef = useRef<SpeechSDK.SpeechSynthesizer | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [activeSpeechKey, setActiveSpeechKey] = useState<string | null>(null);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
     fetchPackages();
+
+    return () => {
+        stopAudio();
+        stopRecording();
+    };
   }, []);
 
   const fetchPackages = async () => {
@@ -54,6 +82,102 @@ export default function ExaminerPage() {
     } catch (err) {
       console.error('Failed to fetch packages');
     }
+  };
+
+  const stopAudio = () => {
+    if (playerRef.current) playerRef.current.pause();
+    if (synthesizerRef.current) synthesizerRef.current.close();
+    setIsPlaying(false);
+    setActiveSpeechKey(null);
+  };
+
+  const playListeningAudio = async (section: any, sectionIdx: number) => {
+    if (isPlaying && activeSpeechKey === `listening-${sectionIdx}`) {
+        stopAudio();
+        return;
+    }
+    stopAudio();
+
+    try {
+        const tokenRes = await fetch('/api/auth/speech-token');
+        const { token, region } = await tokenRes.json();
+
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechSynthesisLanguage = "en-GB";
+
+        playerRef.current = new SpeechSDK.SpeakerAudioDestination();
+        const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
+        synthesizerRef.current = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+
+        playerRef.current.onAudioEnd = () => {
+            setIsPlaying(false);
+            setActiveSpeechKey(null);
+        };
+
+        const ssml = `
+            <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-GB">
+                <voice name="en-GB-SoniaNeural">
+                    ${section.script.replace(/[<>&"']/g, (c: string) => {
+                        switch (c) {
+                            case '<': return '&lt;';
+                            case '>': return '&gt;';
+                            case '&': return '&amp;';
+                            case '"': return '&quot;';
+                            case "'": return '&apos;';
+                            default: return c;
+                        }
+                    })}
+                </voice>
+            </speak>
+        `;
+
+        setIsPlaying(true);
+        setActiveSpeechKey(`listening-${sectionIdx}`);
+        synthesizerRef.current.speakSsmlAsync(ssml, () => {}, (err) => {
+            console.error("Speech Execution Error:", err);
+            setIsPlaying(false);
+            setActiveSpeechKey(null);
+        });
+
+    } catch (err) {
+        toast.error("Audio Initialization Error");
+    }
+  };
+
+  const startRecording = async (module: string, key: string) => {
+    try {
+        const response = await fetch('/api/auth/speech-token');
+        const { token, region } = await response.json();
+
+        const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+        speechConfig.speechRecognitionLanguage = 'en-US';
+        
+        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        recognizer.recognized = (s, e) => {
+            if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                updateAnswer(module, key, (userAnswers[module]?.[key] || '') + ' ' + e.result.text);
+            }
+        };
+
+        recognizer.startContinuousRecognitionAsync();
+        recognizerRef.current = recognizer;
+        setIsRecording(true);
+        setActiveSpeechKey(key);
+        toast.info("Recording started");
+    } catch (err) {
+        toast.error("Speech Service Error");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recognizerRef.current) {
+        recognizerRef.current.stopContinuousRecognitionAsync();
+        recognizerRef.current = null;
+    }
+    setIsRecording(false);
+    setActiveSpeechKey(null);
   };
 
   const generateTest = async () => {
@@ -514,7 +638,18 @@ export default function ExaminerPage() {
                       {/* Render questions dynamically */}
                       {(testData[mod.toLowerCase()] || {}).sections?.map((section: any, sIdx: number) => (
                         <div key={sIdx} className="space-y-6">
-                          <h3 className="font-bold text-lg text-blue-600">Section {sIdx + 1}</h3>
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-lg text-blue-600">Section {sIdx + 1}: {section.title}</h3>
+                            <Button 
+                                variant={activeSpeechKey === `listening-${sIdx}` ? "destructive" : "secondary"}
+                                size="sm" 
+                                onClick={() => playListeningAudio(section, sIdx)}
+                                className="rounded-full px-4"
+                            >
+                                {activeSpeechKey === `listening-${sIdx}` ? <Pause className="w-4 h-4 mr-2" /> : <Volume2 className="w-4 h-4 mr-2" />}
+                                {activeSpeechKey === `listening-${sIdx}` ? "Stop" : "Play Audio"}
+                            </Button>
+                          </div>
                           {section.questions.map((q: any, qIdx: number) => renderQuestion(mod, q, `${mod}-sec-${sIdx}-q-${qIdx}`))}
                         </div>
                       )) || 
@@ -532,13 +667,22 @@ export default function ExaminerPage() {
                            <div className="space-y-4">
                               <Badge className="bg-blue-600 text-white">Task 1</Badge>
                               <p className="font-bold text-slate-800">{testData.writing.task1.prompt}</p>
+                              <Textarea 
+                                placeholder="Write your Task 1 response here (min 150 words)..."
+                                className="min-h-[200px] rounded-2xl border-slate-200"
+                                value={userAnswers['writing']?.['task1'] || ''}
+                                onChange={(e) => updateAnswer('writing', 'task1', e.target.value)}
+                              />
                            </div>
                            <div className="space-y-4 border-t pt-8">
                               <Badge className="bg-blue-600 text-white">Task 2</Badge>
                               <p className="font-bold text-slate-800">{testData.writing.task2.prompt}</p>
-                           </div>
-                           <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 text-sm text-amber-800 italic">
-                               AI Note: For Writing and Speaking, please follow the specialized practice modules for real-time AI evaluation.
+                              <Textarea 
+                                placeholder="Write your Task 2 response here (min 250 words)..."
+                                className="min-h-[300px] rounded-2xl border-slate-200"
+                                value={userAnswers['writing']?.['task2'] || ''}
+                                onChange={(e) => updateAnswer('writing', 'task2', e.target.value)}
+                              />
                            </div>
                         </div>
                       ) : null) ||
@@ -546,20 +690,76 @@ export default function ExaminerPage() {
                          <div className="space-y-8">
                             <div className="space-y-4">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 1: Introduction</h4>
-                                {testData.speaking.part1?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {typeof q === 'string' ? q : q.text}</p>)}
+                                {testData.speaking.part1?.map((q: any, i: number) => (
+                                    <div key={i} className="p-4 border rounded-xl bg-slate-50 space-y-3">
+                                        <p className="text-sm font-bold">• {typeof q === 'string' ? q : q.text}</p>
+                                        <div className="flex gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant={activeSpeechKey === `speaking-1-${i}` ? "destructive" : "outline"}
+                                                onClick={() => activeSpeechKey === `speaking-1-${i}` ? stopRecording() : startRecording('speaking', `speaking-1-${i}`)}
+                                                className="rounded-full h-8"
+                                            >
+                                                {activeSpeechKey === `speaking-1-${i}` ? <Square className="w-3 h-3 mr-2" /> : <Mic className="w-3 h-3 mr-2" />}
+                                                {activeSpeechKey === `speaking-1-${i}` ? "Stop" : "Record Answer"}
+                                            </Button>
+                                        </div>
+                                        {userAnswers['speaking']?.[`speaking-1-${i}`] && (
+                                            <div className="text-xs text-slate-500 italic bg-white p-2 rounded border">
+                                                Transcript: {userAnswers['speaking'][`speaking-1-${i}`]}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                             <div className="space-y-4 border-t pt-8">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 2: Cue Card</h4>
-                                <div className="bg-slate-50 p-6 rounded-2xl border">
-                                    <p className="font-bold">{testData.speaking.part2?.topic}</p>
-                                    <ul className="mt-2 space-y-1">
-                                        {testData.speaking.part2?.bullets?.map((b: string, i: number) => <li key={i} className="text-sm font-medium">• {b}</li>)}
-                                    </ul>
+                                <div className="bg-slate-50 p-6 rounded-2xl border space-y-4">
+                                    <div>
+                                        <p className="font-bold">{testData.speaking.part2?.topic}</p>
+                                        <ul className="mt-2 space-y-1">
+                                            {testData.speaking.part2?.bullets?.map((b: string, i: number) => <li key={i} className="text-sm font-medium">• {b}</li>)}
+                                        </ul>
+                                    </div>
+                                    <Button 
+                                        size="sm" 
+                                        variant={activeSpeechKey === `speaking-2` ? "destructive" : "outline"}
+                                        onClick={() => activeSpeechKey === `speaking-2` ? stopRecording() : startRecording('speaking', `speaking-2`)}
+                                        className="rounded-full h-8"
+                                    >
+                                        {activeSpeechKey === `speaking-2` ? <Square className="w-3 h-3 mr-2" /> : <Mic className="w-3 h-3 mr-2" />}
+                                        {activeSpeechKey === `speaking-2` ? "Stop" : "Record Long Turn"}
+                                    </Button>
+                                    {userAnswers['speaking']?.[`speaking-2`] && (
+                                        <div className="text-xs text-slate-500 italic bg-white p-2 rounded border">
+                                            Transcript: {userAnswers['speaking'][`speaking-2`]}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-4 border-t pt-8">
                                 <h4 className="font-bold text-blue-600 uppercase text-xs">Part 3: Discussion</h4>
-                                {testData.speaking.part3?.map((q: any, i: number) => <p key={i} className="text-sm font-medium">• {typeof q === 'string' ? q : q.text}</p>)}
+                                {testData.speaking.part3?.map((q: any, i: number) => (
+                                    <div key={i} className="p-4 border rounded-xl bg-slate-50 space-y-3">
+                                        <p className="text-sm font-bold">• {typeof q === 'string' ? q : q.text}</p>
+                                        <div className="flex gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant={activeSpeechKey === `speaking-3-${i}` ? "destructive" : "outline"}
+                                                onClick={() => activeSpeechKey === `speaking-3-${i}` ? stopRecording() : startRecording('speaking', `speaking-3-${i}`)}
+                                                className="rounded-full h-8"
+                                            >
+                                                {activeSpeechKey === `speaking-3-${i}` ? <Square className="w-3 h-3 mr-2" /> : <Mic className="w-3 h-3 mr-2" />}
+                                                {activeSpeechKey === `speaking-3-${i}` ? "Stop" : "Record Answer"}
+                                            </Button>
+                                        </div>
+                                        {userAnswers['speaking']?.[`speaking-3-${i}`] && (
+                                            <div className="text-xs text-slate-500 italic bg-white p-2 rounded border">
+                                                Transcript: {userAnswers['speaking'][`speaking-3-${i}`]}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                          </div>
                       ) : null)}

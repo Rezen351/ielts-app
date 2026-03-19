@@ -38,6 +38,10 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 ### [2026-03-19]
 - **Fix (Performance):** Resolved `Examiner` generation timeouts by migrating from per-question incremental generation to section-based bulk generation (10 questions at once for Listening/Reading). Drastically reduced Azure OpenAI API calls and Cosmos DB connection stress.
 - **Optimization:** Adjusted `getSectionPrompt` in `api/generate/examiner/route.ts` and rendering logic in `dashboard/examiner/page.tsx` to fully support object-based section data formats.
+- **Feature (Examiner Interaction):** Added full interactivity to the IELTS Examiner module:
+  - **Listening:** "Play AI Audio" button for each section (TTS using Azure AI Speech).
+  - **Speaking:** Integrated voice recording and real-time transcription for all parts (STT using Azure AI Speech).
+  - **Writing:** Added dedicated textareas for Task 1 and Task 2 responses.
 - **Multi-Model Orchestration 2.0:** Implemented a high-efficiency model routing strategy for optimal cost/performance:
   - **Phi-4 (DEPLOYMENT_PHI):** Used for lightning-fast JSON structure generation and short Speaking Part 1/3 questions.
   - **Mistral Large (DEPLOYMENT_MISTRAL):** Leveraged for long-form academic coherence in Reading passages and Listening scripts.
