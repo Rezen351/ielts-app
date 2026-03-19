@@ -31,6 +31,7 @@ export default function WritingPage() {
   const [isSelecting, setIsSelecting] = useState(true);
   const [topic, setTopic] = useState('');
   const [customTopic, setCustomTopic] = useState('');
+  const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [promptData, setPromptData] = useState<any>(null);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
@@ -56,18 +57,17 @@ export default function WritingPage() {
 
   const startPractice = async (selectedTopic: string) => {
     setGeneratingPrompt(true);
+    setGeneratingPrompt(true);
     setIsSelecting(false);
     try {
-      const writingProgress = user?.progress?.Writing || { difficulty: 'Medium' };
-      const difficulty = writingProgress.difficulty;
-
       const response = await fetch('/api/generate/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           module: 'Writing',
           topic: selectedTopic,
-          difficulty: difficulty
+          difficulty: difficulty,
+          userId: user?.id
         }),
       });
       const result = await response.json();
@@ -137,26 +137,42 @@ export default function WritingPage() {
           </div>
 
           <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Topic</Label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="e.g., Artificial Intelligence, Global Warming, Art Funding..." 
-                  value={customTopic}
-                  onChange={(e) => setCustomTopic(e.target.value)}
-                  className="h-12 rounded-xl border-slate-200 focus-visible:ring-sky-600"
-                />
-                <Button 
-                  onClick={() => startPractice(customTopic)}
-                  disabled={!customTopic.trim() || generatingPrompt}
-                  className="h-12 px-6 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl"
-                >
-                  {generatingPrompt ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
-                </Button>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                        placeholder="e.g., Environment, Education, Career..." 
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
+                    <select 
+                        value={difficulty} 
+                        onChange={(e) => setDifficulty(e.target.value as any)}
+                        className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
+                    >
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
             </div>
 
+            <Button 
+                onClick={() => startPractice(customTopic)}
+                disabled={!customTopic.trim() || generatingPrompt}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
+            >
+                {generatingPrompt ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Prompt"}
+            </Button>
+
             <div className="space-y-4">
+
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
               <div className="flex flex-wrap gap-2">
                 {recommendedTopics.map((t) => (

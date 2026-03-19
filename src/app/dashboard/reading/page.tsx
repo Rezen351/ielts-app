@@ -32,6 +32,7 @@ export default function ReadingPage() {
   const [data, setData] = useState<any>(null);
   const [topic, setTopic] = useState('Technology and Environment');
   const [customTopic, setCustomTopic] = useState('');
+  const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [isSelecting, setIsSelecting] = useState(true);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
 
@@ -61,7 +62,7 @@ export default function ReadingPage() {
         body: JSON.stringify({
           module: 'Reading',
           topic: selectedTopic,
-          difficulty: 'Medium'
+          difficulty: difficulty
         }),
       });
       const result = await response.json();
@@ -138,27 +139,43 @@ export default function ReadingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="md:col-span-2 border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Topic</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="Enter any topic (e.g., Space Exploration, Health, Arts)..." 
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                    className="h-12 rounded-xl border-slate-200 focus-visible:ring-indigo-600"
-                  />
-                  <Button 
-                    onClick={() => startPractice(customTopic)}
-                    disabled={!customTopic.trim() || loading}
-                    className="h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
-                  </Button>
-                </div>
+            <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
+                      <div className="flex gap-2">
+                          <Input 
+                          placeholder="e.g., Archaeology, Space, Health..." 
+                          value={customTopic}
+                          onChange={(e) => setCustomTopic(e.target.value)}
+                          className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                          />
+                      </div>
+                  </div>
+                  <div className="space-y-4">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
+                      <select 
+                          value={difficulty} 
+                          onChange={(e) => setDifficulty(e.target.value as any)}
+                          className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
+                      >
+                          <option>Easy</option>
+                          <option>Medium</option>
+                          <option>Hard</option>
+                      </select>
+                  </div>
               </div>
 
+              <Button 
+                  onClick={() => startPractice(customTopic)}
+                  disabled={!customTopic.trim() || loading}
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
+              >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
+              </Button>
+
               <div className="space-y-4">
+
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
                 <div className="flex flex-wrap gap-2">
                   {recommendedTopics.map((t) => (
