@@ -20,7 +20,8 @@ import {
   Volume2,
   Loader2,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 
 export default function ListeningPage() {
@@ -35,12 +36,15 @@ export default function ListeningPage() {
   const [currentLine, setCurrentLine] = useState(-1);
   const [topic, setTopic] = useState('Academic Life and Services');
   const [customTopic, setCustomTopic] = useState('');
+  const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [isSelecting, setIsSelecting] = useState(true);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
+  const [audioCache, setAudioCache] = useState<Record<string, string>>({});
   
   const playerRef = useRef<SpeechSDK.SpeakerAudioDestination | null>(null);
   const synthesizerRef = useRef<SpeechSDK.SpeechSynthesizer | null>(null);
   const authRef = useRef<{token: string, region: string} | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetchRecommendations();
@@ -61,6 +65,18 @@ export default function ListeningPage() {
     }
   };
 
+  const getSpeechToken = async () => {
+    try {
+      const response = await fetch('/api/auth/speech-token');
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      return data;
+    } catch (err) {
+      console.error("Failed to get speech token:", err);
+      throw err;
+    }
+  };
+
   const startPractice = async (selectedTopic: string) => {
     setLoading(true);
     setIsSelecting(false);
@@ -72,44 +88,48 @@ export default function ListeningPage() {
         body: JSON.stringify({
           module: 'Listening',
           topic: selectedTopic,
-          difficulty: 'Medium'
+          difficulty: difficulty
         }),
       });
       const result = await response.json();
       if (result.success) {
         setData(result.data);
 
-        // INTELLIGENT PARSER: Detect unique speakers and map to voices
+        // Flexible Speaker Detection
         const lines = result.data.script.split('\n').filter((l: string) => l.trim() !== '');
-        
         const uniqueSpeakers: string[] = [];
-        let lastAssignedVoice = "en-GB-RyanNeural"; // Start opposite to Female
-        
-        const parsedDialogue = lines.map((line: string, index: number) => {
-          const match = line.match(/^([^:]+):/);
-          let speakerName = match ? match[1].trim().toLowerCase() : null;
-          let content = match ? line.substring(match[0].length).trim() : line.trim();
+        let lastAssignedVoice = "en-GB-RyanNeural";
 
+        const getVoiceForSpeaker = (name: string, index: number) => {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('woman') || lowerName.includes('female') || lowerName.includes('girl') || lowerName.includes('mrs') || lowerName.includes('ms')) {
+                return "en-GB-LibbyNeural";
+            }
+            if (lowerName.includes('man') || lowerName.includes('male') || lowerName.includes('boy') || lowerName.includes('mr')) {
+                return "en-GB-RyanNeural";
+            }
+            return index % 2 === 0 ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
+        };
+
+        const parsedDialogue = lines.map((line: string) => {
+          const match = line.match(/^([^:]+):/);
+          let speakerName = match ? match[1].trim() : null;
+          let content = match ? line.substring(match[0].length).trim() : line.trim();
           let voice = "";
 
           if (speakerName) {
-            if (!uniqueSpeakers.includes(speakerName)) {
-              uniqueSpeakers.push(speakerName);
-            }
-            const speakerIndex = uniqueSpeakers.indexOf(speakerName);
-            // Speaker 1 = Libby, Speaker 2 = Ryan, etc.
-            voice = speakerIndex % 2 === 0 ? "en-GB-LibbyNeural" : "en-GB-RyanNeural";
+            const lowerName = speakerName.toLowerCase();
+            if (!uniqueSpeakers.includes(lowerName)) uniqueSpeakers.push(lowerName);
+            const speakerIndex = uniqueSpeakers.indexOf(lowerName);
+            voice = getVoiceForSpeaker(speakerName, speakerIndex);
           } else {
-            // Fallback: Just alternate every line if no speaker tag found
             voice = lastAssignedVoice === "en-GB-LibbyNeural" ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
           }
-
           lastAssignedVoice = voice;
           return { voice, text: content };
         });
 
         setDialogue(parsedDialogue);
-
         setTopic(selectedTopic);
         setTimeLeft(1800);
         setAnswers({});
@@ -144,80 +164,73 @@ export default function ListeningPage() {
   };
 
   const handlePlayAudio = async () => {
+    const cacheKey = `listening-practice-${topic}-${difficulty}`;
+
     if (isPlaying) {
-      stopAudio();
+      if (audioRef.current) audioRef.current.pause();
+      setIsPlaying(false);
       return;
     }
 
-    if (!dialogue.length) return;
+    // Check Cache
+    if (audioCache[cacheKey]) {
+      if (audioRef.current) {
+        audioRef.current.src = audioCache[cacheKey];
+        audioRef.current.play();
+        setIsPlaying(true);
+        audioRef.current.onended = () => setIsPlaying(false);
+      }
+      return;
+    }
 
     try {
-      const tokenRes = await fetch('/api/auth/speech-token');
-      const { token, region } = await tokenRes.json();
-
+      const { token, region } = await getSpeechToken();
       const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
-      // Important: Do NOT set a default voice name here when using multi-voice SSML
-      speechConfig.speechSynthesisLanguage = "en-GB"; 
-
-      playerRef.current = new SpeechSDK.SpeakerAudioDestination();
-      const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
-      synthesizerRef.current = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
-
-      playerRef.current.onAudioEnd = () => {
-        setIsPlaying(false);
-        stopAudio();
-      };
+      speechConfig.speechSynthesisLanguage = "en-GB";
 
       // Helper to escape XML
       const escapeXml = (unsafe: string) => {
         return unsafe.replace(/[<>&"']/g, (c) => {
           switch (c) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case '"': return '&quot;';
-            case "'": return '&apos;';
-            default: return c;
+            case '<': return '&lt;'; case '>': return '&gt;'; case '&': return '&amp;';
+            case '"': return '&quot;'; case "'": return '&apos;'; default: return c;
           }
         });
       };
 
       // Generate ONE single SSML for the entire conversation
       let ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-GB">`;
-      
       dialogue.forEach((line) => {
-        // Move the break INSIDE the voice tag to avoid 'RootSpeak' children errors
         ssml += `<voice name="${line.voice}">${escapeXml(line.text)}<break time="500ms"/></voice>`;
       });
-      
       ssml += `</speak>`;
 
-      console.log("[Listening] Starting multi-voice playback...");
-      setIsPlaying(true);
-
-      synthesizerRef.current.speakSsmlAsync(
-        ssml,
-        result => {
-          if (result.reason === SpeechSDK.ResultReason.Canceled) {
-            // Get error details directly from the result object
-            const errorDetails = (result as any).errorDetails || "No detailed error provided by Azure.";
-            console.error("Synthesis Canceled. Details:", errorDetails);
-            
-            // Log full result for deep debugging
-            console.log("[Speech Debug] Full Result Object:", result);
-            
-            setIsPlaying(false);
+      const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, null);
+      
+      synthesizer.speakSsmlAsync(ssml, result => {
+        if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+          const blob = new Blob([result.audioData], { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          
+          setAudioCache(prev => ({ ...prev, [cacheKey]: url }));
+          
+          if (audioRef.current) {
+            audioRef.current.src = url;
+            audioRef.current.play();
+            setIsPlaying(true);
+            audioRef.current.onended = () => setIsPlaying(false);
           }
-        },
-        err => {
-          console.error("Speech Execution Error:", err);
-          setIsPlaying(false);
+        } else {
+          toast.error("Speech Synthesis Failed");
         }
-      );
+        synthesizer.close();
+      }, err => {
+        console.error(err);
+        toast.error("Audio Generation Error");
+      });
 
     } catch (err) {
-      toast.error("Audio Initialization Error");
-      setIsPlaying(false);
+      toast.error("Synthesis failed");
     }
   };
 
@@ -279,24 +292,39 @@ export default function ListeningPage() {
           </div>
 
           <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
-            <div className="space-y-4">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="e.g., Job Interview, Hotel Check-in, Campus Tour..." 
-                  value={customTopic}
-                  onChange={(e) => setCustomTopic(e.target.value)}
-                  className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
-                />
-                <Button 
-                  onClick={() => startPractice(customTopic)}
-                  disabled={!customTopic.trim() || loading}
-                  className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate"}
-                </Button>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
+                    <div className="flex gap-2">
+                        <Input 
+                        placeholder="e.g., Job Interview, Hotel..." 
+                        value={customTopic}
+                        onChange={(e) => setCustomTopic(e.target.value)}
+                        className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
+                    <select 
+                        value={difficulty} 
+                        onChange={(e) => setDifficulty(e.target.value as any)}
+                        className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
+                    >
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
             </div>
+
+            <Button 
+                onClick={() => startPractice(customTopic)}
+                disabled={!customTopic.trim() || loading}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
+            >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
+            </Button>
 
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
@@ -359,6 +387,7 @@ export default function ListeningPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
+        <audio ref={audioRef} className="hidden" />
         <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-slate-900 text-white p-10 relative">
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
             <div className="w-24 h-24 bg-blue-600 rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-500/40 relative">
@@ -408,6 +437,18 @@ export default function ListeningPage() {
                     </div>
                   ))}
                 </RadioGroup>
+
+                {submitted && (
+                  <div className={`mt-6 p-4 rounded-2xl border flex gap-4 ${answers[q.id] === q.correct ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-1">
+                      <p className="font-black">Correct Answer: {q.correct}</p>
+                      <p className="font-medium italic leading-relaxed">
+                        {data?.discussion?.find((d: any) => d.questionId === q.id)?.explanation || "No explanation available for this question."}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

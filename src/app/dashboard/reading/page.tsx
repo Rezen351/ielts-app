@@ -19,7 +19,8 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 
 export default function ReadingPage() {
@@ -268,6 +269,18 @@ export default function ReadingPage() {
                     </div>
                   ))}
                 </RadioGroup>
+                
+                {submitted && (
+                  <div className={`mt-6 p-4 rounded-2xl border flex gap-4 ${answers[q.id] === q.correct ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                    <Info className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="text-sm space-y-1">
+                      <p className="font-black">Correct Answer: {q.correct}</p>
+                      <p className="font-medium italic leading-relaxed">
+                        {data?.discussion?.find((d: any) => d.questionId === q.id)?.explanation || "No discussion available for this question."}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

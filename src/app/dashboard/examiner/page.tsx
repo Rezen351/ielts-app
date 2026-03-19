@@ -22,7 +22,9 @@ import {
   Volume2, 
   Mic, 
   Square,
-  Pause
+  Pause,
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import Link from 'next/link';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
@@ -56,6 +58,8 @@ export default function ExaminerPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeSpeechKey, setActiveSpeechKey] = useState<string | null>(null);
+  const [audioCache, setAudioCache] = useState<Record<string, string>>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -92,11 +96,30 @@ export default function ExaminerPage() {
   };
 
   const playListeningAudio = async (section: any, sectionIdx: number) => {
-    if (isPlaying && activeSpeechKey === `listening-${sectionIdx}`) {
-        stopAudio();
+    const cacheKey = `listening-${packageId || 'new'}-${sectionIdx}`;
+    
+    if (isPlaying && activeSpeechKey === cacheKey) {
+        if (audioRef.current) audioRef.current.pause();
+        setIsPlaying(false);
+        setActiveSpeechKey(null);
         return;
     }
-    stopAudio();
+
+    // 1. Check Cache
+    if (audioCache[cacheKey]) {
+        if (audioRef.current) {
+            audioRef.current.src = audioCache[cacheKey];
+            audioRef.current.play();
+            setIsPlaying(true);
+            setActiveSpeechKey(cacheKey);
+            
+            audioRef.current.onended = () => {
+                setIsPlaying(false);
+                setActiveSpeechKey(null);
+            };
+        }
+        return;
+    }
 
     try {
         const tokenRes = await fetch('/api/auth/speech-token');
@@ -105,42 +128,90 @@ export default function ExaminerPage() {
         const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
         speechConfig.speechSynthesisLanguage = "en-GB";
 
-        playerRef.current = new SpeechSDK.SpeakerAudioDestination();
-        const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(playerRef.current);
-        synthesizerRef.current = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+        // Multi-voice parsing logic
+        const lines = section.script.split('\n').filter((l: string) => l.trim() !== '');
+        const uniqueSpeakers: string[] = [];
+        let lastAssignedVoice = "en-GB-RyanNeural";
 
-        playerRef.current.onAudioEnd = () => {
-            setIsPlaying(false);
-            setActiveSpeechKey(null);
+        const getVoiceForSpeaker = (name: string, index: number) => {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('woman') || lowerName.includes('female') || lowerName.includes('girl') || lowerName.includes('mrs') || lowerName.includes('ms')) {
+                return "en-GB-LibbyNeural";
+            }
+            if (lowerName.includes('man') || lowerName.includes('male') || lowerName.includes('boy') || lowerName.includes('mr')) {
+                return "en-GB-RyanNeural";
+            }
+            // Fallback to alternating: 0=Ryan, 1=Libby
+            return index % 2 === 0 ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
         };
 
-        const ssml = `
-            <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-GB">
-                <voice name="en-GB-SoniaNeural">
-                    ${section.script.replace(/[<>&"']/g, (c: string) => {
-                        switch (c) {
-                            case '<': return '&lt;';
-                            case '>': return '&gt;';
-                            case '&': return '&amp;';
-                            case '"': return '&quot;';
-                            case "'": return '&apos;';
-                            default: return c;
-                        }
-                    })}
-                </voice>
-            </speak>
-        `;
+        const parsedDialogue = lines.map((line: string) => {
+            const match = line.match(/^([^:]+):/);
+            let speakerName = match ? match[1].trim() : null;
+            let content = match ? line.substring(match[0].length).trim() : line.trim();
+            let voice = "";
 
-        setIsPlaying(true);
-        setActiveSpeechKey(`listening-${sectionIdx}`);
-        synthesizerRef.current.speakSsmlAsync(ssml, () => {}, (err) => {
-            console.error("Speech Execution Error:", err);
-            setIsPlaying(false);
-            setActiveSpeechKey(null);
+            if (speakerName) {
+                const lowerName = speakerName.toLowerCase();
+                if (!uniqueSpeakers.includes(lowerName)) uniqueSpeakers.push(lowerName);
+                const speakerIndex = uniqueSpeakers.indexOf(lowerName);
+                voice = getVoiceForSpeaker(speakerName, speakerIndex);
+            } else {
+                voice = lastAssignedVoice === "en-GB-LibbyNeural" ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
+            }
+            lastAssignedVoice = voice;
+            return { voice, text: content };
+        });
+
+        const escapeXml = (unsafe: string) => unsafe.replace(/[<>&"']/g, (c) => {
+            switch (c) {
+                case '<': return '&lt;'; case '>': return '&gt;'; case '&': return '&amp;';
+                case '"': return '&quot;'; case "'": return '&apos;'; default: return c;
+            }
+        });
+
+        let ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-GB">`;
+        parsedDialogue.forEach((line: any) => {
+            ssml += `<voice name="${line.voice}">${escapeXml(line.text)}<break time="500ms"/></voice>`;
+        });
+        ssml += `</speak>`;
+
+        // Synthesize to memory (AudioData)
+        const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, null);
+        
+        setGenerationStatus(`Synthesizing Audio for Section ${sectionIdx + 1}...`);
+        
+        synthesizer.speakSsmlAsync(ssml, result => {
+            if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                const blob = new Blob([result.audioData], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                
+                setAudioCache(prev => ({ ...prev, [cacheKey]: url }));
+                
+                if (audioRef.current) {
+                    audioRef.current.src = url;
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                    setActiveSpeechKey(cacheKey);
+                    
+                    audioRef.current.onended = () => {
+                        setIsPlaying(false);
+                        setActiveSpeechKey(null);
+                    };
+                }
+            } else {
+                toast.error("Speech Synthesis Failed");
+            }
+            synthesizer.close();
+            setGenerationStatus('');
+        }, err => {
+            console.error(err);
+            toast.error("Audio Generation Error");
+            setGenerationStatus('');
         });
 
     } catch (err) {
-        toast.error("Audio Initialization Error");
+        toast.error("Connection Error");
     }
   };
 
@@ -618,6 +689,7 @@ export default function ExaminerPage() {
       </header>
 
       <div className="max-w-6xl mx-auto space-y-8">
+        <audio ref={audioRef} className="hidden" />
         {step === 'test' && (
           <>
             <Tabs value={currentModule} onValueChange={setCurrentModule} className="w-full">
@@ -781,61 +853,205 @@ export default function ExaminerPage() {
         )}
 
         {step === 'results' && evaluation && (
-          <Card className="border-0 shadow-2xl bg-gradient-to-br from-green-50 to-emerald-50 rounded-[40px] overflow-hidden">
-            <CardHeader className="text-center p-12">
-              <Trophy className="w-20 h-20 mx-auto text-emerald-500 mb-4" />
-              <CardTitle className="text-5xl font-black text-emerald-600 tracking-tight">
-                Band {evaluation.overallBand}
-              </CardTitle>
-              <p className="text-2xl font-bold text-slate-700">Overall Performance</p>
-            </CardHeader>
-            <CardContent className="px-12 pb-12">
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {Object.entries(evaluation.moduleBands).map(([mod, band]: any) => (
-                    <Card key={mod} className="text-center border-0 shadow-sm rounded-2xl bg-white p-6">
-                        <div className="text-3xl font-black text-emerald-600 mb-1">{band}</div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{mod}</div>
-                    </Card>
-                ))}
-               </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Detailed Feedback</h3>
-                    <div className="bg-white p-6 rounded-3xl shadow-sm text-sm leading-relaxed text-slate-600 prose prose-slate">
-                        {evaluation.detailedFeedback}
-                    </div>
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <Card className="border-0 shadow-2xl bg-slate-900 text-white rounded-[40px] overflow-hidden">
+                <CardHeader className="text-center p-12">
+                <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
+                <CardTitle className="text-6xl font-black text-white tracking-tight">
+                    Band {evaluation.overallBand}
+                </CardTitle>
+                <p className="text-xl font-bold text-slate-400 mt-2 italic">Official Simulation Result</p>
+                </CardHeader>
+                <CardContent className="px-12 pb-12">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Object.entries(evaluation.moduleBands).map(([mod, band]: any) => (
+                        <Card key={mod} className="text-center border-0 shadow-sm rounded-2xl bg-white/10 backdrop-blur-md p-6">
+                            <div className="text-3xl font-black text-white mb-1">{band}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{mod}</div>
+                        </Card>
+                    ))}
                 </div>
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Targeted Suggestions</h3>
-                    <div className="space-y-3">
-                        {evaluation.suggestions.map((s: string, i: number) => (
-                        <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white shadow-sm border-l-4 border-l-emerald-500">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
-                            <span className="text-sm font-medium text-slate-700">{s}</span>
+                </CardContent>
+            </Card>
+
+            <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-14 bg-slate-100 rounded-2xl p-1 mb-8">
+                    <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
+                    <TabsTrigger value="listening" className="rounded-xl">Listening</TabsTrigger>
+                    <TabsTrigger value="reading" className="rounded-xl">Reading</TabsTrigger>
+                    <TabsTrigger value="writing" className="rounded-xl">Writing</TabsTrigger>
+                    <TabsTrigger value="speaking" className="rounded-xl">Speaking</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <Card className="rounded-[32px] border-slate-200 shadow-sm p-8 space-y-4">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                <Info className="w-4 h-4" /> Examiner's Detailed Feedback
+                            </h3>
+                            <div className="prose prose-slate text-slate-700 leading-relaxed">
+                                {evaluation.detailedFeedback}
+                            </div>
+                        </Card>
+                        <Card className="rounded-[32px] border-slate-200 shadow-sm p-8 space-y-4">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4" /> Targeted Suggestions
+                            </h3>
+                            <div className="space-y-3">
+                                {Array.isArray(evaluation.suggestions) && evaluation.suggestions.map((s: string, i: number) => (
+                                    <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border-l-4 border-l-blue-500">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0" />
+                                        <span className="text-sm font-medium text-slate-700">{s}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="listening" className="space-y-6">
+                    <div className="grid gap-4">
+                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xl">
+                                {evaluation.criteriaBreakdown?.listening?.rawScore || 'N/A'}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-slate-900">Listening Performance</h4>
+                                <p className="text-xs text-slate-500">Question-by-question discussion and script analysis.</p>
+                            </div>
                         </div>
+                        {Array.isArray(evaluation.discussion?.listening) && evaluation.discussion.listening.map((item: any, idx: number) => (
+                            <Card key={idx} className={`rounded-2xl border-slate-200 overflow-hidden ${item.isCorrect ? 'bg-emerald-50/30' : 'bg-red-50/30'}`}>
+                                <div className="p-6 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <Badge variant={item.isCorrect ? "default" : "destructive"} className={`rounded-full ${item.isCorrect ? 'bg-emerald-500 text-white' : ''}`}>
+                                            {item.isCorrect ? "Correct" : "Incorrect"}
+                                        </Badge>
+                                        <span className="text-xs font-bold text-slate-400">Question {item.questionId}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="p-3 bg-white rounded-xl border">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Your Answer</p>
+                                            <p className="font-medium text-slate-700">{item.userAnswer || 'No answer'}</p>
+                                        </div>
+                                        <div className="p-3 bg-white rounded-xl border">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Correct Answer</p>
+                                            <p className="font-black text-slate-900">{item.correctAnswer}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-white/50 rounded-xl text-sm italic text-slate-600 border border-dashed">
+                                        <span className="font-bold text-slate-900 not-italic mr-1">Discussion:</span> {item.explanation}
+                                    </div>
+                                </div>
+                            </Card>
                         ))}
                     </div>
-                </div>
-                </div>
+                </TabsContent>
 
-                <div className="mt-12 flex gap-4">
-                    <Button variant="outline" onClick={() => setStep('setup')} className="flex-1 h-12 rounded-xl font-bold border-slate-200">
-                        Try Another Test
-                    </Button>
-                    <Button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 rounded-xl font-bold shadow-xl" onClick={() => {
-                        const dataStr = JSON.stringify(evaluation, null, 2);
-                        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                        const linkElement = document.createElement('a');
-                        linkElement.setAttribute('href', dataUri);
-                        linkElement.setAttribute('download', `ielts-results-${Date.now()}.json`);
-                        linkElement.click();
-                    }}>
-                        <Download className="w-4 h-4 mr-2" /> Download Report
-                    </Button>
-                </div>
-            </CardContent>
-          </Card>
+                <TabsContent value="reading" className="space-y-6">
+                    <div className="grid gap-4">
+                        <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl">
+                                {evaluation.criteriaBreakdown?.reading?.rawScore || 'N/A'}
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-slate-900">Reading Analysis</h4>
+                                <p className="text-xs text-slate-500">Detailed evidence from the passage for each question.</p>
+                            </div>
+                        </div>
+                        {Array.isArray(evaluation.discussion?.reading) && evaluation.discussion.reading.map((item: any, idx: number) => (
+                            <Card key={idx} className={`rounded-2xl border-slate-200 overflow-hidden ${item.isCorrect ? 'bg-emerald-50/30' : 'bg-red-50/30'}`}>
+                                <div className="p-6 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <Badge variant={item.isCorrect ? "default" : "destructive"} className={`rounded-full ${item.isCorrect ? 'bg-emerald-500 text-white' : ''}`}>
+                                            {item.isCorrect ? "Correct" : "Incorrect"}
+                                        </Badge>
+                                        <span className="text-xs font-bold text-slate-400">Question {item.questionId}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="p-3 bg-white rounded-xl border">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Your Answer</p>
+                                            <p className="font-medium text-slate-700">{item.userAnswer || 'No answer'}</p>
+                                        </div>
+                                        <div className="p-3 bg-white rounded-xl border">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Correct Answer</p>
+                                            <p className="font-black text-slate-900">{item.correctAnswer}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-white/50 rounded-xl text-sm italic text-slate-600 border border-dashed">
+                                        <span className="font-bold text-slate-900 not-italic mr-1">Evidence:</span> {item.explanation}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="writing" className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {['task1', 'task2'].map((task) => (
+                            <Card key={task} className="rounded-[32px] border-slate-200 overflow-hidden flex flex-col">
+                                <CardHeader className="bg-slate-50 border-b">
+                                    <Badge className="w-fit mb-2 uppercase">{task.replace('task', 'Task ')}</Badge>
+                                    <CardTitle className="text-lg">Response Analysis</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 space-y-6 flex-1">
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-black text-emerald-600 uppercase tracking-tighter">Strengths</h4>
+                                        <p className="text-sm text-slate-600">{evaluation.discussion?.writing?.[task]?.strengths}</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-black text-amber-600 uppercase tracking-tighter">Weaknesses</h4>
+                                        <p className="text-sm text-slate-600">{evaluation.discussion?.writing?.[task]?.weaknesses}</p>
+                                    </div>
+                                    <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                                        <h4 className="text-xs font-black text-blue-600 uppercase tracking-tighter mb-2">Examiner Suggestion</h4>
+                                        <p className="text-sm text-slate-700 font-medium">{evaluation.discussion?.writing?.[task]?.suggestedImprovement}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="speaking" className="space-y-6">
+                    <Card className="rounded-[40px] border-slate-200 overflow-hidden">
+                        <CardHeader className="bg-slate-900 text-white p-10">
+                            <h3 className="text-2xl font-black">Speaking Performance Breakdown</h3>
+                            <p className="text-slate-400">Analysis of your fluency, pronunciation, and content development.</p>
+                        </CardHeader>
+                        <CardContent className="p-10 space-y-8">
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {['part1', 'part2', 'part3'].map((part) => (
+                                    <div key={part} className="space-y-3">
+                                        <h4 className="font-bold text-blue-600 uppercase text-xs tracking-widest">{part.replace('part', 'Part ')}</h4>
+                                        <div className="p-4 rounded-2xl bg-slate-50 border text-sm text-slate-600 leading-relaxed min-h-[150px]">
+                                            {evaluation.discussion?.speaking?.[part]}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-6 bg-emerald-50 rounded-[32px] border border-emerald-100 flex items-start gap-4">
+                                <Trophy className="w-8 h-8 text-emerald-500 shrink-0 mt-1" />
+                                <div>
+                                    <h4 className="font-bold text-emerald-900">Final Verdict</h4>
+                                    <p className="text-sm text-emerald-700">{evaluation.criteriaBreakdown?.speaking?.fluency}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setStep('setup')} className="flex-1 h-14 rounded-2xl font-bold border-slate-200 text-lg">
+                    Return to Dashboard
+                </Button>
+                <Button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-14 rounded-2xl font-bold shadow-xl text-lg" onClick={() => window.print()}>
+                    <Download className="w-5 h-5 mr-2" /> Download Full Report
+                </Button>
+            </div>
+          </div>
         )}
       </div>
     </main>

@@ -14,46 +14,86 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+
+    // 1. Strict Raw Scoring (Deterministic)
+    const calculateRawScore = (module: string) => {
+      const moduleKey = module.toLowerCase();
+      const moduleData = generatedTest[moduleKey];
+      const answers = userAnswers[moduleKey] || {};
+      
+      let score = 0;
+      let total = 0;
+      
+      if (moduleKey === 'listening') {
+        moduleData.sections?.forEach((sec: any) => {
+          sec.questions?.forEach((q: any) => {
+            total++;
+            const userAns = (answers[q.id] || '').trim().toLowerCase();
+            const correctAns = (generatedTest.answerKey?.listening?.[q.id] || '').trim().toLowerCase();
+            if (userAns === correctAns && correctAns !== '') score++;
+          });
+        });
+      } else if (moduleKey === 'reading') {
+        moduleData.passages?.forEach((pas: any) => {
+          pas.questions?.forEach((q: any) => {
+            total++;
+            const userAns = (answers[q.id] || '').trim().toLowerCase();
+            const correctAns = (generatedTest.answerKey?.reading?.[q.id] || '').trim().toLowerCase();
+            if (userAns === correctAns && correctAns !== '') score++;
+          });
+        });
+      }
+      return { score, total };
+    };
+
+    const listeningRaw = calculateRawScore('Listening');
+    const readingRaw = calculateRawScore('Reading');
+
     const client = getClient();
     const user = userId ? await User.findById(userId) : null;
     const targetLang = user?.nativeLanguage || 'en';
 
-    // AI Evaluation Prompt with OFFICIAL Band Descriptors
-    const systemPrompt = `You are a certified IELTS Chief Examiner. Evaluate student answers against OFFICIAL IELTS BAND DESCRIPTORS (1.0-9.0).
+    // AI Evaluation Prompt with PRE-CALCULATED RAW SCORES
+    const systemPrompt = `You are a certified IELTS Chief Examiner. Evaluate student answers against OFFICIAL IELTS BAND DESCRIPTORS.
 
-**CRITERIA (each 0-9):**
-- Task Achievement/Response
-- Coherence & Cohesion  
-- Lexical Resource
-- Grammatical Range & Accuracy
-- Pronunciation/Fluency (Speaking only)
+**STRICT DATA PROVIDED:**
+- Listening Raw Score: ${listeningRaw.score}/${listeningRaw.total}
+- Reading Raw Score: ${readingRaw.score}/${readingRaw.total}
 
-**EVALUATE ALL MODULES:**
-LISTENING/READING: Compare to answerKey → Raw score → Convert to band
-WRITING: Content analysis per task
-SPEAKING: Fluency, pronunciation, development
-
-**RULES:**
-1. Use generatedTest.answerKey for objective scoring
-2. Listening/Reading: Exact match, penalize spelling/capitalization
-3. Provide specific examples from student answers
-4. Give improvement suggestions
+**SCORING RULES:**
+1. For Listening/Reading: Use ONLY the provided raw scores and convert to band using official tables (e.g., 30/40 = 7.0 for Academic).
+2. For Writing/Speaking: Analyze provided text/transcripts against band descriptors.
+3. If total questions are few (e.g., only 1 answered), the band MUST reflect that accurately (e.g., Band 1.0 or 2.0). DO NOT hallucinate a high score.
 
 **JSON OUTPUT (strict):**
 {
-  "overallBand": 7.5,
-  "moduleBands": {
-    "listening": 7.0,
-    "reading": 8.0, 
-    "writing": 6.5,
-    "speaking": 7.5
-  },
+  "overallBand": 0.0,
+  "moduleBands": { "listening": 0.0, "reading": 0.0, "writing": 0.0, "speaking": 0.0 },
   "criteriaBreakdown": {
-    "listening": {"rawScore": "32/40", "band": 7.0},
-    // ... per module
+    "listening": {"rawScore": "${listeningRaw.score}/${listeningRaw.total}", "band": 0.0},
+    "reading": {"rawScore": "${readingRaw.score}/${readingRaw.total}", "band": 0.0},
+    "writing": {"band": 0.0, "task1": "...", "task2": "..."},
+    "speaking": {"band": 0.0, "fluency": "...", "pronunciation": "..."}
   },
-  "detailedFeedback": "Strengths: ... Areas for improvement: ...",
-  "suggestions": ["Use complex structures", "Expand vocabulary range"]
+  "discussion": {
+    "listening": [
+      {"questionId": "1", "isCorrect": true, "userAnswer": "...", "correctAnswer": "...", "explanation": "..."}
+    ],
+    "reading": [
+      {"questionId": "1", "isCorrect": false, "userAnswer": "...", "correctAnswer": "...", "explanation": "..."}
+    ],
+    "writing": {
+      "task1": {"strengths": "...", "weaknesses": "...", "suggestedImprovement": "..."},
+      "task2": {"strengths": "...", "weaknesses": "...", "suggestedImprovement": "..."}
+    },
+    "speaking": {
+      "part1": "...",
+      "part2": "...",
+      "part3": "..."
+    }
+  },
+  "detailedFeedback": "...",
+  "suggestions": ["...", "..."]
 }`;
 
     const userPrompt = `

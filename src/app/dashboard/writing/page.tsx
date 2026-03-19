@@ -18,7 +18,8 @@ import {
   Languages,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 
 export default function WritingPage() {
@@ -33,6 +34,7 @@ export default function WritingPage() {
   const [promptData, setPromptData] = useState<any>(null);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
+  const [showSample, setShowSample] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -284,6 +286,29 @@ export default function WritingPage() {
                 <Button variant="outline" onClick={() => setIsSelecting(true)} className="w-full rounded-xl py-6 border-slate-200 text-slate-600 font-bold">
                   Try New Prompt
                 </Button>
+
+                {promptData?.sampleAnswer && (
+                  <div className="space-y-4 pt-4">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setShowSample(!showSample)}
+                      className="w-full rounded-xl py-6 border-blue-200 text-blue-600 font-black uppercase tracking-widest text-[10px] bg-blue-50/50 flex items-center justify-center gap-2"
+                    >
+                      <Info className="w-4 h-4" /> {showSample ? "Hide Sample Answer" : "View Band 9 Sample"}
+                    </Button>
+                    
+                    {showSample && (
+                      <Card className="rounded-[32px] border-blue-100 bg-blue-50/20 shadow-none overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                        <CardHeader className="bg-blue-600 text-white p-6">
+                          <CardTitle className="text-sm font-black uppercase tracking-widest">Model Answer (Band 9.0)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8 text-sm text-slate-700 leading-relaxed italic prose prose-blue max-w-none">
+                          {promptData.sampleAnswer}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

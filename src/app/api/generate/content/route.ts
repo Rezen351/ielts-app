@@ -13,7 +13,19 @@ export async function POST(request: Request) {
     }
 
     await dbConnect();
+
+    // 1. Check if content exists in DB (to save costs)
+    const existingContent = await IELTSContent.findOne({ 
+      module, 
+      topic: { $regex: new RegExp(`^${topic}$`, 'i') }, 
+      difficulty 
+    });
+    if (existingContent) {
+      return NextResponse.json({ success: true, data: existingContent.content, fromCache: true });
+    }
+
     const client = getClient();
+
 
     // Fetch user for persona context if userId is provided
     let personaContext = "";
@@ -22,12 +34,6 @@ export async function POST(request: Request) {
       if (user) {
         personaContext = `The user is a ${user.occupation || 'Student'} with interests in: ${user.hobbies?.join(', ') || 'General topics'}. Target Band: ${user.goalBand || 7.0}.`;
       }
-    }
-
-    // 1. Check if content exists in DB (to save costs)
-    const existingContent = await IELTSContent.findOne({ module, topic, difficulty });
-    if (existingContent) {
-      return NextResponse.json({ success: true, data: existingContent.content, fromCache: true });
     }
 
     // 2. Generate new content if not exists
@@ -53,7 +59,8 @@ export async function POST(request: Request) {
       Format as JSON: { 
         title: string, 
         passage: string, 
-        questions: [{ id: number, text: string, options: [string], correct: string }] 
+        questions: [{ id: number, text: string, options: [string], correct: string }],
+        discussion: [{ questionId: number, explanation: string }] 
       }`;
     } else if (module === 'Writing') {
       // GPT-4o is superior for generating Band 9 sample answers
@@ -86,7 +93,8 @@ export async function POST(request: Request) {
       
       Format as JSON: { 
         script: string, 
-        questions: [{ id: number, text: string, options: [string], correct: string }] 
+        questions: [{ id: number, text: string, options: [string], correct: string }],
+        discussion: [{ questionId: number, explanation: string }] 
       }`;
     } else if (module === 'Speaking') {
       // Phi-4 is hyper-efficient and accurate for short conversational question generation
@@ -98,11 +106,11 @@ export async function POST(request: Request) {
       CRITICAL INSTRUCTIONS:
       1. AUTHENTICITY: Questions must be typical of IELTS Part 1 (e.g., about personal experiences, preferences, or habits related to the topic).
       2. VARIETY: Ensure a mix of direct and slightly more descriptive questions.
-      3. OUTPUT FORMAT: Return strictly as JSON with a "questions" array of strings.
+      3. SAMPLE ANSWERS: For each question, provide a Band 8.5-9.0 sample answer (30-50 words each).
       
       Format as JSON: { 
         topic: string, 
-        questions: [string]
+        questions: [{ id: number, text: string, sampleAnswer: string }]
       }`;
     }
 

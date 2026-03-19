@@ -38,10 +38,18 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 ### [2026-03-19]
 - **Fix (Performance):** Resolved `Examiner` generation timeouts by migrating from per-question incremental generation to section-based bulk generation (10 questions at once for Listening/Reading). Drastically reduced Azure OpenAI API calls and Cosmos DB connection stress.
 - **Optimization:** Adjusted `getSectionPrompt` in `api/generate/examiner/route.ts` and rendering logic in `dashboard/examiner/page.tsx` to fully support object-based section data formats.
+- **Optimization (Hybrid Evaluation):** Migrated to a database-first scoring model:
+  - **Deterministic Scoring:** Listening/Reading raw scores are now pre-calculated in the backend using the stored `answerKey` before calling AI. This prevents "high-score hallucinations" when users only answer a few questions.
+  - **Contextual AI Evaluation:** AI is now provided with strict raw scores (e.g., "5/40") and instructed to follow official IELTS conversion tables for band scoring.
+  - **Content Caching:** Implemented a lookup mechanism in `api/generate/content` to reuse previously generated high-quality content for identical topics and difficulties, significantly reducing AI API consumption.
 - **Feature (Examiner Interaction):** Added full interactivity to the IELTS Examiner module:
   - **Listening:** "Play AI Audio" button for each section (TTS using Azure AI Speech).
   - **Speaking:** Integrated voice recording and real-time transcription for all parts (STT using Azure AI Speech).
   - **Writing:** Added dedicated textareas for Task 1 and Task 2 responses.
+- **Optimization (Audio & UX):**
+  - **Multi-voice Support:** Implemented natural multi-speaker conversations in both Listening Practice and Examiner Listening using alternating voices (`Libby` and `Ryan`). Added gender detection logic to match voices with speaker names (e.g., "Woman" -> Libby).
+  - **Audio Caching:** Integrated a Blob-based caching system that saves synthesized audio in memory. Repeat plays are now instantaneous, drastically reducing Azure Speech API calls and user wait times.
+- **Fix (Stability):** Resolved a `TypeError` in the Examiner results view by strengthening the AI prompt structure and adding `Array.isArray()` defensive checks for discussion and suggestion data.
 - **Multi-Model Orchestration 2.0:** Implemented a high-efficiency model routing strategy for optimal cost/performance:
   - **Phi-4 (DEPLOYMENT_PHI):** Used for lightning-fast JSON structure generation and short Speaking Part 1/3 questions.
   - **Mistral Large (DEPLOYMENT_MISTRAL):** Leveraged for long-form academic coherence in Reading passages and Listening scripts.

@@ -19,7 +19,8 @@ import {
   Volume2,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 
 export default function SpeakingPage() {
@@ -33,9 +34,10 @@ export default function SpeakingPage() {
   const [isSelecting, setIsSelecting] = useState(true);
   const [topic, setTopic] = useState('');
   const [customTopic, setCustomTopic] = useState('');
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
+  const [showSample, setShowSample] = useState(false);
   
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
 
@@ -142,7 +144,7 @@ export default function SpeakingPage() {
         body: JSON.stringify({
           essay: text,
           taskType: 'Speaking Part 1',
-          prompt: questions[currentPart],
+          prompt: questions[currentPart]?.text,
           userId: user?.id
         }),
       });
@@ -164,6 +166,7 @@ export default function SpeakingPage() {
     setTranscript('');
     setFeedback(null);
     setShowTranslation(false);
+    setShowSample(false);
   };
 
   if (isSelecting) {
@@ -262,7 +265,7 @@ export default function SpeakingPage() {
           <div className="space-y-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">AI Examiner asks:</p>
             <p className="text-3xl font-black text-slate-900 leading-tight max-w-2xl mx-auto tracking-tight">
-              "{questions[currentPart]}"
+              "{questions[currentPart]?.text}"
             </p>
           </div>
 
@@ -322,6 +325,25 @@ export default function SpeakingPage() {
                         </div>
                       ))}
                     </div>
+
+                    {questions[currentPart]?.sampleAnswer && (
+                        <div className="pt-4 border-t border-slate-100">
+                             <Button 
+                                variant="ghost" 
+                                onClick={() => setShowSample(!showSample)}
+                                className="w-full rounded-xl py-4 border-violet-200 text-violet-600 font-black uppercase tracking-widest text-[10px] bg-violet-50/50 flex items-center justify-center gap-2"
+                            >
+                                <Info className="w-4 h-4" /> {showSample ? "Hide Sample Answer" : "View Band 9 Sample"}
+                            </Button>
+                            
+                            {showSample && (
+                                <div className="mt-4 p-6 rounded-2xl bg-slate-900 text-slate-300 text-sm italic leading-relaxed border-l-4 border-l-violet-500 animate-in slide-in-from-top-2 duration-300">
+                                    <p className="text-violet-400 font-black uppercase text-[10px] tracking-widest not-italic mb-2">Model Answer (Band 9.0)</p>
+                                    "{questions[currentPart].sampleAnswer}"
+                                </div>
+                            )}
+                        </div>
+                    )}
                   </div>
                 )}
               </Card>
