@@ -36,94 +36,127 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Generate new content if not exists
+    // 2. Helper function for OpenAI call with self-correction loop
+    const generateWithRetry = async (
+      model: string,
+      messages: any[], 
+      temperature = 0.7, 
+      maxTokens = 4000, 
+      maxRetries = 5,
+      validator?: (data: any) => { valid: boolean; reason?: string }
+    ) => {
+      let lastError: any;
+      let currentMessages = [...messages];
+      let currentTemperature = temperature;
+
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          console.log(`[API:Content] Attempt ${i + 1}/${maxRetries} using ${model} (Temp: ${currentTemperature.toFixed(2)})`);
+          const response = await client.chat.completions.create({
+            model,
+            messages: currentMessages,
+            response_format: { type: "json_object" },
+            temperature: currentTemperature,
+            max_tokens: maxTokens
+          });
+
+          const content = response.choices[0].message.content || '{}';
+          let data;
+          try {
+            data = JSON.parse(content);
+          } catch (parseError: any) {
+            console.warn(`[API:Content] JSON Parse failed on attempt ${i + 1}:`, parseError.message);
+            throw new Error(`Invalid JSON format: ${parseError.message}`);
+          }
+
+          // Run validation if provided
+          if (validator) {
+            const validation = validator(data);
+            if (!validation.valid) {
+              console.warn(`[API:Content] Validation failed on attempt ${i + 1}: ${validation.reason}`);
+              
+              // FEEDBACK LOOP
+              currentMessages.push({ role: "assistant", content: content });
+              currentMessages.push({ 
+                role: "user", 
+                content: `Your previous JSON was invalid: "${validation.reason}". Please fix this and provide the complete corrected JSON.` 
+              });
+              
+              currentTemperature = Math.max(0.2, currentTemperature - 0.1);
+              throw new Error(validation.reason);
+            }
+          }
+
+          return data;
+        } catch (error: any) {
+          lastError = error;
+          if (i < maxRetries - 1) {
+            await new Promise(res => setTimeout(res, 1000 * (i + 1))); 
+          }
+        }
+      }
+      throw new Error(`Content generation failed after ${maxRetries} attempts. Last error: ${lastError.message}`);
+    };
+
+    // Module-specific validator
+    const validateContent = (data: any) => {
+      if (module === 'Reading') {
+        if (!data.passage || !data.questions || !Array.isArray(data.questions)) return { valid: false, reason: "Missing passage or questions array" };
+        const hasTextAndCorrect = data.questions.every((q: any) => q.text && q.correct);
+        if (!hasTextAndCorrect) return { valid: false, reason: "Some reading questions are missing 'text' or 'correct' answer" };
+      } else if (module === 'Writing') {
+        if (!data.prompt || !data.sampleAnswer) return { valid: false, reason: "Missing prompt or sample answer" };
+      } else if (module === 'Listening') {
+        if (!data.script || !data.questions || !Array.isArray(data.questions)) return { valid: false, reason: "Missing script or questions array" };
+        const hasTextAndCorrect = data.questions.every((q: any) => q.text && q.correct);
+        if (!hasTextAndCorrect) return { valid: false, reason: "Some listening questions are missing 'text' or 'correct' answer" };
+      } else if (module === 'Speaking') {
+        if (!data.questions || !Array.isArray(data.questions)) return { valid: false, reason: "Missing questions array" };
+        const hasText = data.questions.every((q: any) => q.text);
+        if (!hasText) return { valid: false, reason: "Some speaking questions are missing 'text'" };
+      }
+      return { valid: true };
+    };
+
+    // 3. Define prompts and select model
     let systemPrompt = "";
-    let selectedModel = DEPLOYMENT_MINI; // Default to mini
+    let selectedModel = DEPLOYMENT_MINI;
 
     const difficultyContext = 
-      difficulty === 'Easy' ? 'Target Band 5.0-6.0: Simpler vocabulary, clear articulation, slower pace, and more direct answers.' :
-      difficulty === 'Hard' ? 'Target Band 8.0-9.0: Complex academic vocabulary, idiomatic expressions, faster pace with more distractors, and nuanced arguments.' :
-      'Target Band 6.5-7.5: Standard IELTS difficulty with a mix of direct and indirect information, and some complex sentence structures.';
+      difficulty === 'Easy' ? 'Target Band 5.0-6.0: Simpler vocabulary, clear articulation.' :
+      difficulty === 'Hard' ? 'Target Band 8.0-9.0: Complex academic vocabulary, fast pace.' :
+      'Target Band 6.5-7.5: Standard IELTS difficulty.';
 
     if (module === 'Reading') {
-      // Mistral Large is world-class for long-form academic coherence
-      selectedModel = DEPLOYMENT_MISTRAL; 
-      systemPrompt = `You are a professional IELTS Reading content creator. Generate a unique IELTS Reading passage and 10 questions based on the topic "${topic}".
-      Difficulty: ${difficulty} (${difficultyContext}).
-      
-      CRITICAL INSTRUCTIONS:
-      1. PASSAGE: The passage should be approximately 700-900 words for Academic level.
-      2. QUESTIONS: Generate 10 questions of varying types (e.g., 4 Multiple Choice, 3 True/False/Not Given, 3 Sentence Completion).
-      3. AUTHENTICITY: Ensure the text sounds like it came from an academic journal or high-quality news source.
-      
-      Format as JSON: { 
-        title: string, 
-        passage: string, 
-        questions: [{ id: number, text: string, options: [string], correct: string }],
-        discussion: [{ questionId: number, explanation: string }] 
-      }`;
+      selectedModel = DEPLOYMENT_MINI; 
+      systemPrompt = `You are an IELTS Reading content creator. Topic: "${topic}". Difficulty: ${difficulty}.
+      Format as JSON: { title: string, passage: string (700-900 words), questions: [{ id: number, type: string, text: string, options: [string], correct: string }], discussion: [{ questionId: number, explanation: string }] }`;
     } else if (module === 'Writing') {
-      // GPT-4o is superior for generating Band 9 sample answers
-      selectedModel = DEPLOYMENT_HIGH;
-      systemPrompt = `You are a professional IELTS Writing content creator. Generate a unique IELTS Writing Task 2 prompt based on the topic "${topic}".
-      Difficulty: ${difficulty} (${difficultyContext}). 
-      ${personaContext ? `PERSONA CONTEXT: ${personaContext} (Try to make the prompt relevant to the user's background if possible, or use it to calibrate difficulty).` : ''}
-      
-      CRITICAL INSTRUCTIONS:
-      1. PROMPT: Use standard IELTS phrasing like "To what extent do you agree or disagree?" or "Discuss both views and give your opinion."
-      2. SAMPLE ANSWER: Provide a high-scoring sample answer (Band 8.0-9.0) of at least 250 words.
-      
-      Format as JSON: { 
-        taskType: "Writing Task 2", 
-        prompt: string, 
-        instructions: string,
-        sampleAnswer: string
-      }`;
+      selectedModel = DEPLOYMENT_MINI;
+      systemPrompt = `You are an IELTS Writing examiner. Topic: "${topic}". Difficulty: ${difficulty}.
+      Format as JSON: { taskType: "Writing Task 2", prompt: string, instructions: string, sampleAnswer: string (250+ words) }`;
     } else if (module === 'Listening') {
-      // Mistral Large handles natural dialogues and monologue scripts with high realism
-      selectedModel = DEPLOYMENT_MISTRAL;
-      systemPrompt = `You are a professional IELTS Listening content creator. Generate a unique IELTS Listening Section 3 or 4 script and 10 questions based on the topic "${topic}".
-      Difficulty: ${difficulty} (${difficultyContext}). 
-      
-      CRITICAL INSTRUCTIONS:
-      1. SCRIPT: If Section 3, it should be a discussion between 2-3 people in an academic context. If Section 4, it should be an academic monologue (lecture). 
-      2. LENGTH: The script should be around 800-1000 words.
-      3. QUESTIONS: Generate 10 questions. Use a mix of Multiple Choice and Summary/Note Completion.
-      4. DISTRACTORS: Include information that speakers correct or clarify later to test active listening.
-      
-      Format as JSON: { 
-        script: string, 
-        questions: [{ id: number, text: string, options: [string], correct: string }],
-        discussion: [{ questionId: number, explanation: string }] 
-      }`;
+      selectedModel = DEPLOYMENT_MINI;
+      systemPrompt = `You are an IELTS Listening creator. Topic: "${topic}". Difficulty: ${difficulty}.
+      Format as JSON: { script: string (800-1000 words), questions: [{ id: number, type: string, text: string, options: [string], correct: string }], discussion: [{ questionId: number, explanation: string }] }
+      IMPORTANT: Each question in the "questions" array MUST include both the "text" of the question and the "correct" answer string. They must be generated as a single package for each question.`;
     } else if (module === 'Speaking') {
-      // Phi-4 is hyper-efficient and accurate for short conversational question generation
-      selectedModel = DEPLOYMENT_PHI;
-      systemPrompt = `You are a professional IELTS Speaking examiner. Generate 5 unique IELTS Speaking Part 1 questions based on the topic "${topic}".
-      Difficulty: ${difficulty} (${difficultyContext}). 
-      ${personaContext ? `PERSONA CONTEXT: ${personaContext} (Make questions feel personal to the user's hobbies or occupation where appropriate).` : ''}
-      
-      CRITICAL INSTRUCTIONS:
-      1. AUTHENTICITY: Questions must be typical of IELTS Part 1 (e.g., about personal experiences, preferences, or habits related to the topic).
-      2. VARIETY: Ensure a mix of direct and slightly more descriptive questions.
-      3. SAMPLE ANSWERS: For each question, provide a Band 8.5-9.0 sample answer (30-50 words each).
-      
-      Format as JSON: { 
-        topic: string, 
-        questions: [{ id: number, text: string, sampleAnswer: string }]
-      }`;
+      selectedModel = DEPLOYMENT_MINI;
+      systemPrompt = `You are an IELTS Speaking examiner. Topic: "${topic}". Difficulty: ${difficulty}.
+      Format as JSON: { topic: string, questions: [{ id: number, text: string, sampleAnswer: string }] }`;
     }
 
-    const response = await client.chat.completions.create({
-      model: selectedModel,
-      messages: [{ role: "system", content: systemPrompt }],
-      response_format: { type: "json_object" },
-      max_tokens: selectedModel === DEPLOYMENT_PHI ? 1000 : 4000 
-    });
+    // 4. Generate with self-correction
+    const generatedContent = await generateWithRetry(
+      selectedModel,
+      [{ role: "system", content: systemPrompt }],
+      0.7,
+      4000,
+      5,
+      validateContent
+    );
 
-    const generatedContent = JSON.parse(response.choices[0].message.content || "{}");
-
-    // 3. Save to DB for future use
+    // 5. Save to DB for future use
     await IELTSContent.create({
       module,
       topic,

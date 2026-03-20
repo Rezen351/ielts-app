@@ -153,7 +153,14 @@ export async function POST(request: Request) {
 
       for (const q of data.questions) {
         const qId = q.id?.toString() || 'unknown';
-        if (!q.type || !q.question) return { valid: false, reason: `Question ${qId} missing type/text` };
+        const qText = q.text || q.question;
+        if (!q.type || !qText) return { valid: false, reason: `Question ${qId} missing type or text` };
+        
+        // Ensure each question has a 'correct' field
+        if (!q.correct && (!data.answerKey || !data.answerKey[qId])) {
+          return { valid: false, reason: `Question ${qId} is missing the 'correct' answer field` };
+        }
+
         // 2. Type-Specific Validation
         const needsOptions = ['multiple_choice', 'matching', 'true_false_not_given'].includes(q.type);
         if (needsOptions) {
@@ -167,13 +174,18 @@ export async function POST(request: Request) {
 
         // 3. Strict Placeholder Check for Text-Input Types
         if (q.type === 'gap_fill' || q.type === 'short_answer') {
-          if (!q.question.includes('___')) {
-            return { valid: false, reason: `Question ${qId} (${q.type}) is missing the input placeholder '__________'. Current text: "${q.question}"` };
+          if (!qText.includes('__________')) {
+            return { valid: false, reason: `Question ${qId} (${q.type}) is missing the input placeholder '__________'. Current text: "${qText}"` };
           }
         }
+      }
 
-
-        if (!data.answerKey[qId]) return { valid: false, reason: `Question ${qId} missing in answerKey` };
+      // Reconstruct answerKey if it's missing but 'correct' is present in questions
+      if (!data.answerKey || typeof data.answerKey !== 'object') {
+        data.answerKey = {};
+        data.questions.forEach((q: any) => {
+          if (q.correct) data.answerKey[q.id.toString()] = q.correct;
+        });
       }
 
       return { valid: true };

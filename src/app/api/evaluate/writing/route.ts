@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import getClient, { DEPLOYMENT_HIGH } from '@/lib/azure-openai';
+import getClient, { DEPLOYMENT_MINI } from '@/lib/azure-openai';
 import dbConnect from '@/lib/mongodb';
 import TestResult from '@/models/TestResult';
 import User from '@/models/User';
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nResponse:\n${essay}`;
 
     const response = await client.chat.completions.create({
-      model: DEPLOYMENT_HIGH,
+      model: DEPLOYMENT_MINI,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }

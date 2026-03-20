@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import getClient, { DEPLOYMENT_MINI, DEPLOYMENT_HIGH, DEPLOYMENT_PHI } from '@/lib/azure-openai';
+import getClient, { DEPLOYMENT_MINI } from '@/lib/azure-openai';
 
 export async function POST(request: Request) {
   try {
@@ -12,15 +12,8 @@ export async function POST(request: Request) {
       content: m.content
     }));
 
-    // Detect intent for Smart Routing
-    const lastMessage = formattedMessages[formattedMessages.length - 1]?.content?.toLowerCase() || "";
-    let selectedModel = DEPLOYMENT_MINI; // Default to mini (efficient)
-
-    if (lastMessage.includes("speaking test") || lastMessage.includes("simulasi speaking")) {
-      selectedModel = DEPLOYMENT_HIGH; // High-quality for mock interviews
-    } else if (lastMessage.includes("grammar") || lastMessage.includes("vocabulary") || lastMessage.includes("synonym")) {
-      selectedModel = DEPLOYMENT_PHI; // Ultra-fast and cheap for linguistic tasks
-    }
+    // Use mini for efficiency
+    let selectedModel = DEPLOYMENT_MINI;
 
     const systemMessage = {
       role: "system",

@@ -36,10 +36,11 @@ export const getSectionPrompt = (module: string, type: string, diff: string, con
     - Difficulty Level: ${target}.
     - You MUST generate a FULL set of questions as per IELTS standards. 
     - Every question MUST have a "type" (multiple_choice, gap_fill, matching, true_false_not_given, short_answer).
+    - Every question object MUST include both "text" (the question itself) and "correct" (the correct answer). 
     - If "type" is "multiple_choice" or "matching", the "options" array MUST NOT be empty.
-    - If "type" is "gap_fill", you MUST include exactly "__________" (10 underscores) inside the "question" string where the answer should be placed. Failure to include "__________" will result in a validation error.
+    - If "type" is "gap_fill", you MUST include exactly "__________" (10 underscores) inside the "text" string where the answer should be placed. Failure to include "__________" will result in a validation error.
     - Example gap_fill: "The lecture will take place in the __________ hall."
-    - The "answerKey" MUST map the question ID to the correct answer string exactly.
+    - The "answerKey" object MUST ALSO be provided at the root for easy access, mapping IDs to correct answers.
     - OUTPUT ONLY VALID JSON.
   `;
 
@@ -53,14 +54,16 @@ export const getSectionPrompt = (module: string, type: string, diff: string, con
         { 
           "id": 1, 
           "type": "multiple_choice", 
-          "question": "The main reason for the meeting is...", 
-          "options": ["A. To discuss sales", "B. To hire new staff", "C. To plan the party", "D. To review the budget"] 
+          "text": "The main reason for the meeting is...", 
+          "options": ["A. To discuss sales", "B. To hire new staff", "C. To plan the party", "D. To review the budget"],
+          "correct": "B"
         },
         { 
           "id": 2, 
           "type": "gap_fill", 
-          "question": "Wave power is considered a __________ frontier in renewable energy.", 
-          "options": [] 
+          "text": "Wave power is considered a __________ frontier in renewable energy.", 
+          "options": [],
+          "correct": "new"
         }
       ], 
       "answerKey": { "1": "B", "2": "new" } 
@@ -78,14 +81,16 @@ export const getSectionPrompt = (module: string, type: string, diff: string, con
         { 
           "id": 1, 
           "type": "true_false_not_given", 
-          "question": "The study was conducted in 2020.", 
-          "options": ["True", "False", "Not Given"] 
+          "text": "The study was conducted in 2020.", 
+          "options": ["True", "False", "Not Given"],
+          "correct": "True"
         },
         { 
           "id": 2, 
           "type": "short_answer", 
-          "question": "What is the primary gas released?", 
-          "options": [] 
+          "text": "What is the primary gas released?", 
+          "options": [],
+          "correct": "Carbon Dioxide"
         }
       ], 
       "answerKey": { "1": "True", "2": "Carbon Dioxide" } 
@@ -117,7 +122,7 @@ export const getSectionPrompt = (module: string, type: string, diff: string, con
 
 export const getQuestionPrompt = (mod: string, type: string, diff: string, content: any, details: any) => {
   return `Generate single professional IELTS question for ${mod} Section ${details.sectionIndex + 1}. Difficulty: ${diff}. 
-  Ensure the question is complete with type, options (if multiple choice), and clear answer.
-  OUTPUT ONLY JSON: { "id": 1, "type": "...", "question": "...", "options": [], "answer": "..." }`;
+  Ensure the question is complete with type, options (if multiple choice), and clear correct answer.
+  OUTPUT ONLY JSON: { "id": 1, "type": "...", "text": "...", "options": [], "correct": "..." }`;
 };
 
