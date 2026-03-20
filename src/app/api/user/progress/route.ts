@@ -39,9 +39,11 @@ export async function GET(request: Request) {
     let recommendation = "";
     if (missingModules.length > 0) {
       recommendation = `Start with ${missingModules[0]} to complete your profile.`;
-    } else {
+    } else if (stats.length > 0) {
       const lowestModule = stats.reduce((prev, curr) => (prev.avgScore < curr.avgScore) ? prev : curr);
       recommendation = `Your ${lowestModule._id} score is lower than others. Try a practice session.`;
+    } else {
+      recommendation = "Complete your first practice test to see your recommendation.";
     }
 
     return NextResponse.json({ 

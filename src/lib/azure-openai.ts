@@ -50,7 +50,9 @@ const getClient = () => {
   global.azureClient = new AzureOpenAI({
     endpoint,
     apiKey: apiKey || "BUILD_PLACEHOLDER", // Avoid constructor crash during build
-    apiVersion: "2024-12-01-preview",
+    apiVersion: "2025-01-01-preview",
+    timeout: 60000, // 60 detik timeout
+    maxRetries: 2,  // Mencoba ulang 2 kali jika gagal
     // Remove the 'deployment' option from constructor to allow multi-model calls
   });
 

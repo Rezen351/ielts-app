@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import TestResult from '@/models/TestResult';
 import User from '@/models/User';
 import { translateText } from '@/lib/azure-translator';
+import { convertRawToBand } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
@@ -20,26 +21,41 @@ export async function POST(request: Request) {
       const moduleKey = module.toLowerCase();
       const moduleData = generatedTest[moduleKey];
       const answers = userAnswers[moduleKey] || {};
+      const answerKey = generatedTest.answerKey?.[moduleKey] || {};
       
       let score = 0;
       let total = 0;
       
-      if (moduleKey === 'listening') {
-        moduleData.sections?.forEach((sec: any) => {
+      if (moduleKey === 'listening' || moduleKey === 'reading') {
+        const sections = moduleKey === 'listening' ? moduleData.sections : moduleData.passages;
+        sections?.forEach((sec: any, sIdx: number) => {
           sec.questions?.forEach((q: any) => {
             total++;
-            const userAns = (answers[q.id] || '').trim().toLowerCase();
-            const correctAns = (generatedTest.answerKey?.listening?.[q.id] || '').trim().toLowerCase();
-            if (userAns === correctAns && correctAns !== '') score++;
-          });
-        });
-      } else if (moduleKey === 'reading') {
-        moduleData.passages?.forEach((pas: any) => {
-          pas.questions?.forEach((q: any) => {
-            total++;
-            const userAns = (answers[q.id] || '').trim().toLowerCase();
-            const correctAns = (generatedTest.answerKey?.reading?.[q.id] || '').trim().toLowerCase();
-            if (userAns === correctAns && correctAns !== '') score++;
+            const qId = `s${sIdx}q${q.id}`;
+            const userAnsRaw = String(answers[qId] || '').trim();
+            const correctAnsRaw = String(answerKey[qId] || '').trim();
+            
+            if (!userAnsRaw) return;
+
+            const normalize = (s: string) => s.toLowerCase().trim().replace(/^[a-d]\)\s*/, '');
+            const getLetter = (s: string) => {
+                const m = s.match(/^([a-d])(?:\)|\s|$)/i);
+                return m ? m[1].toLowerCase() : null;
+            };
+
+            const userLetter = getLetter(userAnsRaw);
+            const correctLetter = getLetter(correctAnsRaw);
+            const userText = normalize(userAnsRaw);
+            const correctText = normalize(correctAnsRaw);
+
+            // STRICT MATCHING:
+            // 1. Jika pilihan ganda (A, B, C, D), harus cocok hurufnya.
+            // 2. Jika True/False/Not Given atau Isian, harus cocok persis teksnya.
+            // 3. Tidak ada toleransi 'includes' untuk menghindari jawaban ambigu/curang.
+            const isMatch = (userLetter && userLetter === correctLetter) ||
+                            (userText !== '' && userText === correctText);
+
+            if (isMatch) score++;
           });
         });
       }
@@ -49,51 +65,51 @@ export async function POST(request: Request) {
     const listeningRaw = calculateRawScore('Listening');
     const readingRaw = calculateRawScore('Reading');
 
+    // 2. Official Band Conversion
+    const listeningBand = convertRawToBand(listeningRaw.score, 'listening', testType);
+    const readingBand = convertRawToBand(readingRaw.score, 'reading', testType);
+
     const client = getClient();
     const user = userId ? await User.findById(userId) : null;
     const targetLang = user?.nativeLanguage || 'en';
 
-    // AI Evaluation Prompt with PRE-CALCULATED RAW SCORES
-    const systemPrompt = `You are a certified IELTS Chief Examiner. Evaluate student answers against OFFICIAL IELTS BAND DESCRIPTORS.
+    // 3. AI for Qualitative Modules (Writing/Speaking)
+    const systemPrompt = `You are a certified IELTS Chief Examiner.
+Evaluate the student's performance based on the provided answers.
 
-**STRICT DATA PROVIDED:**
-- Listening Raw Score: ${listeningRaw.score}/${listeningRaw.total}
-- Reading Raw Score: ${readingRaw.score}/${readingRaw.total}
+**QUANTITATIVE SCORES (MANDATORY):**
+- Listening: Raw ${listeningRaw.score}/${listeningRaw.total} -> Band ${listeningBand}
+- Reading: Raw ${readingRaw.score}/${readingRaw.total} -> Band ${readingBand}
 
-**SCORING RULES:**
-1. For Listening/Reading: Use ONLY the provided raw scores and convert to band using official tables (e.g., 30/40 = 7.0 for Academic).
-2. For Writing/Speaking: Analyze provided text/transcripts against band descriptors.
-3. If total questions are few (e.g., only 1 answered), the band MUST reflect that accurately (e.g., Band 1.0 or 2.0). DO NOT hallucinate a high score.
+**EVALUATION TASKS:**
+1. Evaluate Writing Task 1 & 2 individually using Band Descriptors (Task Response, Coherence, Lexical, Grammar).
+2. Evaluate Speaking Part 1, 2, & 3 using Band Descriptors (Fluency, Lexical, Grammar, Pronunciation).
+3. Calculate the Overall Band by averaging all 4 modules (L, R, W, S) and rounding to the nearest 0.5.
 
-**JSON OUTPUT (strict):**
+**OUTPUT FORMAT:**
+You must provide a VALID JSON object. 
+IMPORTANT: 
+1. The "discussion" object MUST include EVERY SINGLE questionId present in the test, even if the student left it blank.
+2. For unanswered questions, set "isCorrect": false and "userAnswer": "(No Answer)", but provide the full "correctAnswer" and "explanation".
+3. For Writing/Speaking with no content, provide a "Model Answer" or "Recommended Approach" in the discussion field.
+
 {
   "overallBand": 0.0,
-  "moduleBands": { "listening": 0.0, "reading": 0.0, "writing": 0.0, "speaking": 0.0 },
+  "moduleBands": { "listening": ${listeningBand}, "reading": ${readingBand}, "writing": 0.0, "speaking": 0.0 },
   "criteriaBreakdown": {
-    "listening": {"rawScore": "${listeningRaw.score}/${listeningRaw.total}", "band": 0.0},
-    "reading": {"rawScore": "${readingRaw.score}/${readingRaw.total}", "band": 0.0},
-    "writing": {"band": 0.0, "task1": "...", "task2": "..."},
-    "speaking": {"band": 0.0, "fluency": "...", "pronunciation": "..."}
+    "listening": {"rawScore": "${listeningRaw.score}/${listeningRaw.total}", "band": ${listeningBand}},
+    "reading": {"rawScore": "${readingRaw.score}/${readingRaw.total}", "band": ${readingBand}},
+    "writing": {"band": 0.0, "task1_score": 0.0, "task2_score": 0.0, "feedback": "..."},
+    "speaking": {"band": 0.0, "fluency": 0.0, "grammar": 0.0, "pronunciation": 0.0}
   },
   "discussion": {
-    "listening": [
-      {"questionId": "1", "isCorrect": true, "userAnswer": "...", "correctAnswer": "...", "explanation": "..."}
-    ],
-    "reading": [
-      {"questionId": "1", "isCorrect": false, "userAnswer": "...", "correctAnswer": "...", "explanation": "..."}
-    ],
-    "writing": {
-      "task1": {"strengths": "...", "weaknesses": "...", "suggestedImprovement": "..."},
-      "task2": {"strengths": "...", "weaknesses": "...", "suggestedImprovement": "..."}
-    },
-    "speaking": {
-      "part1": "...",
-      "part2": "...",
-      "part3": "..."
-    }
+    "listening": [{ "questionId": "s0q1", "isCorrect": true, "userAnswer": "...", "correctAnswer": "...", "explanation": "..." }], 
+    "reading": [{ "questionId": "s0q1", "isCorrect": false, "userAnswer": "...", "correctAnswer": "...", "explanation": "..." }],
+    "writing": { "task1": {"strengths": "...", "weaknesses": "...", "improvement": "...", "modelAnswer": "..."}, "task2": {"strengths": "...", "weaknesses": "...", "improvement": "...", "modelAnswer": "..."} },
+    "speaking": { "part1": {"feedback": "...", "recommendedResponse": "..."}, "part2": {"feedback": "...", "recommendedResponse": "..."}, "part3": {"feedback": "...", "recommendedResponse": "..."} }
   },
   "detailedFeedback": "...",
-  "suggestions": ["...", "..."]
+  "suggestions": []
 }`;
 
     const userPrompt = `
@@ -133,6 +149,9 @@ Student Answers: ${JSON.stringify(userAnswers, null, 2)}`;
           testType,
           moduleBands: evaluation.moduleBands,
           criteriaBreakdown: evaluation.criteriaBreakdown,
+          discussion: evaluation.discussion, // Added for history review
+          detailedFeedback: evaluation.detailedFeedback,
+          suggestions: evaluation.suggestions,
           userAnswers,
           generatedTestId: generatedTest._id || 'generated'
         },

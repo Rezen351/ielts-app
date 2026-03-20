@@ -17,10 +17,15 @@ if (!cached) {
 }
 
 async function dbConnect() {
-  const MONGODB_URI = process.env.MONGODB_URI;
+  let MONGODB_URI = process.env.MONGODB_URI;
 
   if (!MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable');
+  }
+
+  // Bersihkan URI dari parameter retryWrites yang mungkin ada
+  if (MONGODB_URI.includes('retrywrites=true')) {
+    MONGODB_URI = MONGODB_URI.replace('retrywrites=true', 'retrywrites=false');
   }
 
   if (cached!.conn) {
@@ -28,22 +33,22 @@ async function dbConnect() {
   }
 
   if (!cached!.promise) {
-    // Opsi khusus untuk Azure Cosmos DB for MongoDB agar lebih stabil
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 20000, // 20 detik
-      socketTimeoutMS: 120000, // 120 detik (long LLM calls)
-      connectTimeoutMS: 20000,
-      heartbeatFrequencyMS: 10000, // 10 detik keep-alive
-      retryWrites: true,
-      // Cosmos DB memerlukan SSL/TLS
+      serverSelectionTimeoutMS: 30000, // Tingkatkan ke 30 detik
+      socketTimeoutMS: 120000,
+      connectTimeoutMS: 30000,
+      heartbeatFrequencyMS: 10000,
+      retryWrites: false,
       tls: true,
       minPoolSize: 1,
       maxPoolSize: 10,
+      family: 4 // Paksa IPv4 untuk menghindari error ENETUNREACH pada IPv6
     };
 
+    console.log("[MongoDB] Attempting to connect to Cosmos DB...");
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log("[MongoDB] Connected to Cosmos DB");
+      console.log("[MongoDB] Connected successfully to Cosmos DB");
       return mongoose;
     });
   }

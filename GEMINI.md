@@ -35,32 +35,22 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
 ## Update Log
-### [2026-03-19]
-- **Fix (Performance):** Resolved `Examiner` generation timeouts by migrating from per-question incremental generation to section-based bulk generation (10 questions at once for Listening/Reading). Drastically reduced Azure OpenAI API calls and Cosmos DB connection stress.
-- **Optimization:** Adjusted `getSectionPrompt` in `api/generate/examiner/route.ts` and rendering logic in `dashboard/examiner/page.tsx` to fully support object-based section data formats.
-- **Optimization (Hybrid Evaluation):** Migrated to a database-first scoring model:
-  - **Deterministic Scoring:** Listening/Reading raw scores are now pre-calculated in the backend using the stored `answerKey` before calling AI. This prevents "high-score hallucinations" when users only answer a few questions.
-  - **Contextual AI Evaluation:** AI is now provided with strict raw scores (e.g., "5/40") and instructed to follow official IELTS conversion tables for band scoring.
-  - **Content Caching:** Implemented a lookup mechanism in `api/generate/content` to reuse previously generated high-quality content for identical topics and difficulties, significantly reducing AI API consumption.
-- **Feature (Examiner Interaction):** Added full interactivity to the IELTS Examiner module:
-  - **Listening:** "Play AI Audio" button for each section (TTS using Azure AI Speech).
-  - **Speaking:** Integrated voice recording and real-time transcription for all parts (STT using Azure AI Speech).
-  - **Writing:** Added dedicated textareas for Task 1 and Task 2 responses.
-- **Optimization (Audio & UX):**
-  - **Multi-voice Support:** Implemented natural multi-speaker conversations in both Listening Practice and Examiner Listening using alternating voices (`Libby` and `Ryan`). Added gender detection logic to match voices with speaker names (e.g., "Woman" -> Libby).
-  - **Audio Caching:** Integrated a Blob-based caching system that saves synthesized audio in memory. Repeat plays are now instantaneous, drastically reducing Azure Speech API calls and user wait times.
-- **Fix (Stability):** Resolved a `TypeError` in the Examiner results view by strengthening the AI prompt structure and adding `Array.isArray()` defensive checks for discussion and suggestion data.
-- **Multi-Model Orchestration 2.0:** Implemented a high-efficiency model routing strategy for optimal cost/performance:
-  - **Phi-4 (DEPLOYMENT_PHI):** Used for lightning-fast JSON structure generation and short Speaking Part 1/3 questions.
-  - **Mistral Large (DEPLOYMENT_MISTRAL):** Leveraged for long-form academic coherence in Reading passages and Listening scripts.
-  - **GPT-4o (DEPLOYMENT_HIGH):** Reserved for high-stakes evaluation, complex Writing tasks, and Band 9 sample answers.
-  - **GPT-4o-mini (DEPLOYMENT_MINI):** Default general-purpose fallback.
-- **Fix (Azure OpenAI):** Updated API version to `2024-12-01-preview` and decoupled the deployment from the client constructor to allow dynamic model switching (fixed "0 traffic" issue on GPT-4o).
-- **Fix (Database):** Resolved `PoolClearedOnNetworkError` by increasing Cosmos DB connection timeouts (`socketTimeoutMS`: 120s, `serverSelectionTimeoutMS`: 20s) and adding `heartbeatFrequencyMS` for better stability during long LLM calls.
-- **Fix (API):** Fixed a potential JSON parsing error in `api/evaluate/examiner` by ensuring `rawScore` is returned as a string (e.g., "32/40").
-- **UI/UX:** Completely redesigned the Landing Page (`page.tsx`) with a stunning, modern dark-mode aesthetic.
-- **Feature:** Introduced **AI Persona Context** for highly tailored test content.
-- **Workflow:** Automated the process of updating this log and pushing to GitHub after successful builds.
+### [2026-03-20]
+- **Robust Generation Engine (v2.0):**
+  - **Self-Correcting Loop:** Implemented a sophisticated dialogue loop in `generateWithRetry`. If the AI returns malformed or incomplete data, the system now provides specific feedback and forces the model to correct itself (up to 10 attempts).
+  - **Adaptive Intelligence:** Automatically lowers model "temperature" during retries to increase deterministic accuracy for complex JSON structures.
+  - **Deep Validation:** Added a programmatic quality control layer that strictly enforces IELTS standards (e.g., minimum option counts, mandatory gap-fill placeholders `__________`, and answer-key alignment).
+  - **Module-Specific Logic:** Calibrated validators to distinguish between "Section" modules (Listening/Reading) and "Task/Part" modules (Writing/Speaking), preventing false-positive rejections.
+- **Feature (Incremental Persistence):** 
+  - **Atomic Saves:** Implemented immediate database commits after every successful section generation. If a full test generation is interrupted, all previous work is safely stored, preventing token waste and allowing seamless "Resume" functionality.
+- **UI/UX (Professional Examiner Suite):**
+  - **Multi-Input Detection:** Developed an intelligent gap-fill system that auto-detects multiple blanks in a single question, labels them `(1)`, `(2)`, etc., and renders independent input fields for a professional computer-delivered exam experience.
+  - **Speaking Part 2 (Cue Card):** Redesigned the Speaking interface to include a high-fidelity "Cue Card" display with clear Topic and Bullet Point guidance, matching official IELTS Part 2 standards.
+  - **Interactive Feedback:** Enhanced the recording UI with pulsating "Listening..." states and "Captured" badges for better user confirmation.
+- **Fix (Stability):** 
+  - **React Render Protection:** Implemented strict string-type enforcement for question options to prevent "Objects are not valid as a React child" crashes caused by inconsistent AI outputs.
+  - **Universal Field Mapping:** Updated frontend rendering to be field-agnostic, ensuring questions display correctly whether the AI uses `question`, `text`, or raw string formats.
+- **Status:** All generation, UI, and interactivity systems are verified and stable. **In Progress:** Refining the scoring and evaluation logic.
 
 ### [2026-03-18]
 - **Fix:** Implemented lazy-loading singleton pattern for Azure OpenAI client to resolve `Missing credentials` build errors in CI/CD (Azure Static Web Apps/Oryx).
