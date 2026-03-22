@@ -162,35 +162,35 @@ export default function ReadingPage() {
 
   if (isSelecting) {
     return (
-      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-6">
-        <div className="max-w-2xl w-full space-y-8">
+      <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-4 md:p-6">
+        <div className="max-w-2xl w-full space-y-6 md:space-y-8">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
-              <BookOpen className="w-8 h-8" />
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-[20px] md:rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
+              <BookOpen className="w-6 h-6 md:w-8 md:h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reading Practice📖</h1>
-            <p className="text-slate-500 font-medium">Select a topic or enter your own to generate a unique IELTS passage.</p>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Reading Practice📖</h1>
+            <p className="text-sm md:text-base text-slate-500 font-medium">Select a topic or enter your own to generate a unique IELTS passage.</p>
           </div>
 
-          <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+          <Card className="border-slate-200 shadow-sm rounded-[24px] md:rounded-[32px] p-6 md:p-8 space-y-6 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="space-y-3 md:space-y-4">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Custom Scenario</Label>
                     <div className="flex gap-2">
                         <Input 
                         placeholder="e.g., Archaeology, Space, Health..." 
                         value={customTopic}
                         onChange={(e) => setCustomTopic(e.target.value)}
-                        className="h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600"
+                        className="h-10 md:h-12 rounded-xl border-slate-200 focus-visible:ring-blue-600 text-sm"
                         />
                     </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                     <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Difficulty</Label>
                     <select 
                         value={difficulty} 
                         onChange={(e) => setDifficulty(e.target.value as any)}
-                        className="w-full h-12 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-sm"
+                        className="w-full h-10 md:h-12 p-2 md:p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white font-bold text-xs md:text-sm"
                     >
                         <option>Easy</option>
                         <option>Medium</option>
@@ -202,14 +202,14 @@ export default function ReadingPage() {
             <Button 
                 onClick={() => startPractice(customTopic)}
                 disabled={!customTopic.trim() || loading}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
+                className="w-full h-11 md:h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100 text-sm"
             >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
             </Button>
 
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Practices</Label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[250px] md:max-h-none overflow-y-auto pr-1">
                 {recentPractices.length === 0 ? (
                     <p className="text-xs text-slate-400 italic">No saved practices found.</p>
                 ) : (
@@ -218,42 +218,42 @@ export default function ReadingPage() {
                           <button 
                               key={p._id}
                               onClick={() => loadExistingPractice(p)}
-                              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/50 transition-all text-left group"
+                              className="w-full flex items-center justify-between p-3 md:p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/50 transition-all text-left group"
                           >
                               <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
                                       <BookOpen className="w-4 h-4" />
                                   </div>
                                   <div>
-                                      <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{p.topic}</p>
+                                      <p className="text-xs md:text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors line-clamp-1">{p.topic}</p>
                                       <Badge variant="secondary" className="text-[8px] h-3.5 uppercase">{p.difficulty}</Badge>
                                   </div>
                               </div>
-                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-all" />
+                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-all shrink-0" />
                           </button>
                       ))}
 
                       {totalPages > 1 && (
                         <div className="flex items-center justify-between pt-2">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
+                          <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
                           <div className="flex gap-1">
                             <Button 
                               variant="outline" 
                               size="sm" 
                               disabled={recentPage === 1}
                               onClick={() => setRecentPage(p => p - 1)}
-                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                              className="h-7 w-7 md:h-8 md:w-8 p-0 rounded-lg border-slate-200"
                             >
-                              <ChevronRight className="w-4 h-4 rotate-180" />
+                              <ChevronRight className="w-3 h-3 md:w-4 md:h-4 rotate-180" />
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
                               disabled={recentPage === totalPages}
                               onClick={() => setRecentPage(p => p + 1)}
-                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                              className="h-7 w-7 md:h-8 md:w-8 p-0 rounded-lg border-slate-200"
                             >
-                              <ChevronRight className="w-4 h-4" />
+                              <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                             </Button>
                           </div>
                         </div>
@@ -272,17 +272,17 @@ export default function ReadingPage() {
                     variant="outline" 
                     onClick={() => startPractice(t)}
                     disabled={loading}
-                    className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold text-xs"
+                    className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold text-[10px] px-3 h-8"
                   >
-                    <Sparkles className="w-3 h-3 mr-2 text-amber-400" /> {t}
+                    <Sparkles className="w-3 h-3 mr-1.5 text-amber-400" /> {t}
                   </Button>
                 ))}
               </div>
             </div>
           </Card>
           
-          <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-xs uppercase tracking-widest">
-            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-4 h-4" /> Back to Dashboard</Link>
+          <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent">
+            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Dashboard</Link>
           </Button>
         </div>
       </div>

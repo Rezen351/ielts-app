@@ -13,11 +13,15 @@ import {
   Languages,
   Briefcase,
   Heart,
-  Trophy
+  Trophy,
+  User,
+  Mail
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [nativeLang, setNativeLang] = useState('id');
   const [occupation, setOccupation] = useState('Student');
   const [hobbies, setHobbies] = useState('');
@@ -29,6 +33,8 @@ export default function SettingsPage() {
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
       setUser(parsed);
+      setName(parsed.name || '');
+      setEmail(parsed.email || '');
       setNativeLang(parsed.nativeLanguage || 'id');
       setOccupation(parsed.occupation || 'Student');
       setHobbies(Array.isArray(parsed.hobbies) ? parsed.hobbies.join(', ') : (parsed.hobbies || ''));
@@ -39,6 +45,11 @@ export default function SettingsPage() {
   }, []);
 
   const handleSave = async () => {
+    if (!name.trim() || !email.trim()) {
+      toast.error("Name and Email are required");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch('/api/user/settings', {
@@ -46,6 +57,8 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
+          name,
+          email,
           nativeLanguage: nativeLang,
           occupation,
           hobbies,
@@ -56,11 +69,13 @@ export default function SettingsPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Settings saved", { description: "Your persona and profile have been updated." });
+        toast.success("Settings saved", { description: "Your profile has been updated." });
         
         // Update local storage with the full updated user object from backend
         const userToStore = {
           ...user,
+          name: data.user.name,
+          email: data.user.email,
           nativeLanguage: data.user.nativeLanguage,
           occupation: data.user.occupation,
           hobbies: data.user.hobbies,
@@ -95,7 +110,47 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-8 max-w-2xl mx-auto w-full space-y-8">
+      <main className="flex-1 p-4 md:p-8 max-w-2xl mx-auto w-full space-y-8 pb-20">
+        <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
+          <CardHeader className="p-8 pb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <User className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-xl font-bold text-slate-900">Account Profile</CardTitle>
+            </div>
+            <CardDescription className="text-slate-500 font-medium">
+              Update your basic information.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-4 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <User className="w-3 h-3" /> Full Name
+                </label>
+                <input 
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your Name"
+                  className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <Mail className="w-3 h-3" /> Email Address
+                </label>
+                <input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
           <CardHeader className="p-8 pb-4">
             <div className="flex items-center gap-3 mb-2">
