@@ -19,7 +19,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Info
+  Info,
+  ChevronRight
 } from 'lucide-react';
 
 export default function WritingPage() {
@@ -37,11 +38,45 @@ export default function WritingPage() {
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
   const [showSample, setShowSample] = useState(false);
 
+  const [recentPractices, setRecentPractices] = useState<any[]>([]);
+  const [recentPage, setRecentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
     fetchRecommendations();
+    fetchRecentPractices();
   }, []);
+
+  const fetchRecentPractices = async () => {
+    try {
+      const response = await fetch('/api/generate/content?module=Writing');
+      const result = await response.json();
+      if (result.success) {
+        setRecentPractices(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recent practices");
+    }
+  };
+
+  const paginatedPractices = recentPractices.slice(
+    (recentPage - 1) * itemsPerPage,
+    recentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(recentPractices.length / itemsPerPage);
+
+  const loadExistingPractice = (practice: any) => {
+    setPromptData(practice.content);
+    setTopic(practice.topic);
+    setDifficulty(practice.difficulty);
+    setIsSelecting(false);
+    setEssay('');
+    setAnalysis(null);
+    toast.success("Resuming Practice: " + practice.topic);
+  };
 
   const fetchRecommendations = async () => {
     try {
@@ -132,7 +167,7 @@ export default function WritingPage() {
             <div className="w-16 h-16 bg-sky-100 rounded-[24px] flex items-center justify-center text-sky-600 mx-auto mb-4">
               <PenTool className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Writing Practice</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Writing Practice ✍️</h1>
             <p className="text-slate-500 font-medium">Choose a topic to generate a unique essay prompt.</p>
           </div>
 
@@ -172,7 +207,62 @@ export default function WritingPage() {
             </Button>
 
             <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Practices</Label>
+              <div className="space-y-2">
+                {recentPractices.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No saved practices found.</p>
+                ) : (
+                    <>
+                      {paginatedPractices.map((p) => (
+                          <button 
+                              key={p._id}
+                              onClick={() => loadExistingPractice(p)}
+                              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/50 transition-all text-left group"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                      <PenTool className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{p.topic}</p>
+                                      <Badge variant="secondary" className="text-[8px] h-3.5 uppercase">{p.difficulty}</Badge>
+                                  </div>
+                              </div>
+                              <Sparkles className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-all" />
+                          </button>
+                      ))}
 
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === 1}
+                              onClick={() => setRecentPage(p => p - 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4 rotate-180" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === totalPages}
+                              onClick={() => setRecentPage(p => p + 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
               <div className="flex flex-wrap gap-2">
                 {recommendedTopics.map((t) => (

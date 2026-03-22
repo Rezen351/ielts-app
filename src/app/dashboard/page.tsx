@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { toast } from "sonner";
 import { 
   LayoutDashboard, 
   Headphones, 
@@ -24,7 +25,10 @@ import {
   MessageSquare,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Languages,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -32,6 +36,9 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [insight, setInsight] = useState<any>(null);
+  const [insightTranslated, setInsightTranslated] = useState<string>('');
+  const [translatingInsight, setTranslatingInsight] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -39,6 +46,7 @@ export default function DashboardPage() {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       fetchProgress(parsedUser.id);
+      fetchInsight(parsedUser.id);
     }
   }, []);
 
@@ -53,6 +61,26 @@ export default function DashboardPage() {
       console.error("Failed to fetch progress");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchInsight = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/insights?userId=${userId}`);
+      const data = await response.json();
+      if (data.success) {
+        setInsight(data.insight);
+      }
+    } catch (err) {
+      console.error("Failed to fetch insight");
+    }
+  };
+
+  const toggleInsightTranslation = () => {
+    if (insightTranslated) {
+      setInsightTranslated('');
+    } else if (insight?.contentTranslated) {
+      setInsightTranslated(insight.contentTranslated);
     }
   };
 
@@ -166,6 +194,66 @@ return (
         </header>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-8 pb-20">
+          {/* Daily Insight Section */}
+          <section className="animate-in fade-in duration-1000 slide-in-from-top-4">
+            <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-xl rounded-[40px] overflow-hidden group">
+              <CardContent className="p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="space-y-6 flex-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-200">
+                      <Zap className="w-5 h-5 fill-current" />
+                    </div>
+                    <div>
+                      <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black uppercase tracking-widest text-[10px] px-3 py-1">
+                        English Check ⚡: {insight?.topic || 'Cool English'}
+                      </Badge>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1 ml-0.5">Powered AI Coach</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <p className={`text-xl font-bold text-slate-900 leading-relaxed tracking-tight flex-1 ${!insight && 'animate-pulse bg-slate-100 h-16 rounded-2xl w-full max-w-2xl'}`}>
+                        {insight ? `"${insight.content}"` : ""}
+                      </p>
+                      {insight && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            setInsight(null);
+                            setInsightTranslated('');
+                            fetchInsight(user.id);
+                          }}
+                          className="text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl shrink-0"
+                          title="Ganti Vibe"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {insightTranslated && (
+                      <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <p className="text-sm font-bold text-indigo-700 leading-relaxed">
+                          {insightTranslated}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {insight && (
+                  <Button 
+                    variant="outline" 
+                    onClick={toggleInsightTranslation}
+                    className="rounded-2xl font-black text-[10px] uppercase tracking-widest border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all gap-3 h-14 px-8 shrink-0 shadow-sm hover:shadow-md bg-white"
+                  >
+                    <Languages className="w-4 h-4" />
+                    {insightTranslated ? "Back to English" : "Terjemahan"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+
           {/* Hero Stats */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">

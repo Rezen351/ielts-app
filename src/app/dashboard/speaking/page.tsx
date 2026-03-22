@@ -20,7 +20,8 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Info
+  Info,
+  ChevronRight
 } from 'lucide-react';
 
 export default function SpeakingPage() {
@@ -42,10 +43,15 @@ export default function SpeakingPage() {
   
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
 
+  const [recentPractices, setRecentPractices] = useState<any[]>([]);
+  const [recentPage, setRecentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
     fetchRecommendations();
+    fetchRecentPractices();
     
     return () => {
       if (recognizerRef.current) {
@@ -53,6 +59,36 @@ export default function SpeakingPage() {
       }
     };
   }, []);
+
+  const fetchRecentPractices = async () => {
+    try {
+      const response = await fetch('/api/generate/content?module=Speaking');
+      const result = await response.json();
+      if (result.success) {
+        setRecentPractices(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recent practices");
+    }
+  };
+
+  const paginatedPractices = recentPractices.slice(
+    (recentPage - 1) * itemsPerPage,
+    recentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(recentPractices.length / itemsPerPage);
+
+  const loadExistingPractice = (practice: any) => {
+    setQuestions(practice.content.questions);
+    setTopic(practice.topic);
+    setDifficulty(practice.difficulty);
+    setIsSelecting(false);
+    setCurrentPart(0);
+    setTranscript('');
+    setFeedback(null);
+    toast.success("Resuming Practice: " + practice.topic);
+  };
 
   const fetchRecommendations = async () => {
     try {
@@ -176,8 +212,8 @@ export default function SpeakingPage() {
             <div className="w-16 h-16 bg-violet-100 rounded-[24px] flex items-center justify-center text-violet-600 mx-auto mb-4">
               <Mic className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Speaking Coach</h1>
-            <p className="text-slate-500 font-medium">Generate IELTS Speaking Part 1 questions based on your interest.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Speaking Practice📢</h1>
+            <p className="text-slate-500 font-medium">Generate IELTS Speaking questions based on your interest.</p>
           </div>
 
           <Card className="border-slate-200 shadow-sm rounded-[32px] p-8 space-y-6 bg-white">
@@ -214,6 +250,62 @@ export default function SpeakingPage() {
             >
                 {generatingQuestions ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Questions"}
             </Button>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Practices</Label>
+              <div className="space-y-2">
+                {recentPractices.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No saved practices found.</p>
+                ) : (
+                    <>
+                      {paginatedPractices.map((p) => (
+                          <button 
+                              key={p._id}
+                              onClick={() => loadExistingPractice(p)}
+                              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-violet-200 hover:bg-violet-50/50 transition-all text-left group"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-violet-600 transition-colors">
+                                      <Mic className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-700 group-hover:text-violet-600 transition-colors">{p.topic}</p>
+                                      <Badge variant="secondary" className="text-[8px] h-3.5 uppercase">{p.difficulty}</Badge>
+                                  </div>
+                              </div>
+                              <Sparkles className="w-4 h-4 text-slate-300 group-hover:text-violet-600 transition-all" />
+                          </button>
+                      ))}
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === 1}
+                              onClick={() => setRecentPage(p => p - 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4 rotate-180" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === totalPages}
+                              onClick={() => setRecentPage(p => p + 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>

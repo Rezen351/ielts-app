@@ -36,9 +36,43 @@ export default function ReadingPage() {
   const [isSelecting, setIsSelecting] = useState(true);
   const [recommendedTopics, setRecommendedTopics] = useState<string[]>([]);
 
+  const [recentPractices, setRecentPractices] = useState<any[]>([]);
+  const [recentPage, setRecentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     fetchRecommendations();
+    fetchRecentPractices();
   }, []);
+
+  const fetchRecentPractices = async () => {
+    try {
+      const response = await fetch('/api/generate/content?module=Reading');
+      const result = await response.json();
+      if (result.success) {
+        setRecentPractices(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recent practices");
+    }
+  };
+
+  const paginatedPractices = recentPractices.slice(
+    (recentPage - 1) * itemsPerPage,
+    recentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(recentPractices.length / itemsPerPage);
+
+  const loadExistingPractice = (practice: any) => {
+    setData(practice.content);
+    setTopic(practice.topic);
+    setDifficulty(practice.difficulty);
+    setIsSelecting(false);
+    setSubmitted(false);
+    setAnswers({});
+    toast.success("Resuming Practice: " + practice.topic);
+  };
 
   const fetchRecommendations = async () => {
     try {
@@ -134,7 +168,7 @@ export default function ReadingPage() {
             <div className="w-16 h-16 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
               <BookOpen className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reading Practice</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reading Practice📖</h1>
             <p className="text-slate-500 font-medium">Select a topic or enter your own to generate a unique IELTS passage.</p>
           </div>
 
@@ -172,6 +206,62 @@ export default function ReadingPage() {
             >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
             </Button>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Practices</Label>
+              <div className="space-y-2">
+                {recentPractices.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No saved practices found.</p>
+                ) : (
+                    <>
+                      {paginatedPractices.map((p) => (
+                          <button 
+                              key={p._id}
+                              onClick={() => loadExistingPractice(p)}
+                              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/50 transition-all text-left group"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                      <BookOpen className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{p.topic}</p>
+                                      <Badge variant="secondary" className="text-[8px] h-3.5 uppercase">{p.difficulty}</Badge>
+                                  </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-all" />
+                          </button>
+                      ))}
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === 1}
+                              onClick={() => setRecentPage(p => p - 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4 rotate-180" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === totalPages}
+                              onClick={() => setRecentPage(p => p + 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>

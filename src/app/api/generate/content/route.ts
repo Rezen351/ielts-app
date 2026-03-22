@@ -4,6 +4,28 @@ import dbConnect from '@/lib/mongodb';
 import IELTSContent from '@/models/IELTSContent';
 import User from '@/models/User';
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const module = searchParams.get('module');
+    const userId = searchParams.get('userId');
+
+    await dbConnect();
+
+    let query: any = {};
+    if (module) query.module = module;
+    
+    // If userId is provided, we might want to prioritize their content or just show all relevant content
+    // For now, let's return all content for that module, sorted by newest
+    const content = await IELTSContent.find(query).sort({ createdAt: -1 }).limit(20);
+    
+    return NextResponse.json({ success: true, data: content });
+  } catch (error: any) {
+    console.error('GET Content error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { module, topic, difficulty, userId } = await request.json();
@@ -15,13 +37,15 @@ export async function POST(request: Request) {
     await dbConnect();
 
     // 1. Check if content exists in DB (to save costs)
+    // We search for content with same module, topic and difficulty
     const existingContent = await IELTSContent.findOne({ 
       module, 
       topic: { $regex: new RegExp(`^${topic}$`, 'i') }, 
       difficulty 
     });
+    
     if (existingContent) {
-      return NextResponse.json({ success: true, data: existingContent.content, fromCache: true });
+      return NextResponse.json({ success: true, data: existingContent.content, fromCache: true, id: existingContent._id });
     }
 
     const client = getClient();

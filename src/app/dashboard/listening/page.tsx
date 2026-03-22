@@ -21,7 +21,8 @@ import {
   Loader2,
   RefreshCw,
   Sparkles,
-  Info
+  Info,
+  ChevronRight
 } from 'lucide-react';
 
 export default function ListeningPage() {
@@ -46,12 +47,82 @@ export default function ListeningPage() {
   const authRef = useRef<{token: string, region: string} | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [recentPractices, setRecentPractices] = useState<any[]>([]);
+  const [recentPage, setRecentPage] = useState(1);
+  const itemsPerPage = 5;
+
   useEffect(() => {
     fetchRecommendations();
+    fetchRecentPractices();
     return () => {
       stopAudio();
     };
   }, []);
+
+  const fetchRecentPractices = async () => {
+    try {
+      const response = await fetch('/api/generate/content?module=Listening');
+      const result = await response.json();
+      if (result.success) {
+        setRecentPractices(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recent practices");
+    }
+  };
+
+  const paginatedPractices = recentPractices.slice(
+    (recentPage - 1) * itemsPerPage,
+    recentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(recentPractices.length / itemsPerPage);
+
+  const loadExistingPractice = (practice: any) => {
+    setData(practice.content);
+    setTopic(practice.topic);
+    setDifficulty(practice.difficulty);
+    setIsSelecting(false);
+    setSubmitted(false);
+    setAnswers({});
+    
+    // Parse dialogue
+    const lines = practice.content.script.split('\n').filter((l: string) => l.trim() !== '');
+    const uniqueSpeakers: string[] = [];
+    let lastAssignedVoice = "en-GB-RyanNeural";
+
+    const getVoiceForSpeaker = (name: string, index: number) => {
+        const lowerName = name.toLowerCase();
+        if (lowerName.includes('woman') || lowerName.includes('female') || lowerName.includes('girl') || lowerName.includes('mrs') || lowerName.includes('ms')) {
+            return "en-GB-LibbyNeural";
+        }
+        if (lowerName.includes('man') || lowerName.includes('male') || lowerName.includes('boy') || lowerName.includes('mr')) {
+            return "en-GB-RyanNeural";
+        }
+        return index % 2 === 0 ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
+    };
+
+    const parsedDialogue = lines.map((line: string) => {
+      const match = line.match(/^([^:]+):/);
+      let speakerName = match ? match[1].trim() : null;
+      let content = match ? line.substring(match[0].length).trim() : line.trim();
+      let voice = "";
+
+      if (speakerName) {
+        const lowerName = speakerName.toLowerCase();
+        if (!uniqueSpeakers.includes(lowerName)) uniqueSpeakers.push(lowerName);
+        const speakerIndex = uniqueSpeakers.indexOf(lowerName);
+        voice = getVoiceForSpeaker(speakerName, speakerIndex);
+      } else {
+        voice = lastAssignedVoice === "en-GB-LibbyNeural" ? "en-GB-RyanNeural" : "en-GB-LibbyNeural";
+      }
+      lastAssignedVoice = voice;
+      return { voice, text: content };
+    });
+
+    setDialogue(parsedDialogue);
+    toast.success("Resuming Practice: " + practice.topic);
+  };
 
   const fetchRecommendations = async () => {
     try {
@@ -287,7 +358,7 @@ export default function ListeningPage() {
             <div className="w-16 h-16 bg-blue-100 rounded-[24px] flex items-center justify-center text-blue-600 mx-auto mb-4">
               <Headphones className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Listening Practice</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Listening Practice🎧</h1>
             <p className="text-slate-500 font-medium">Generate a unique listening scenario based on your choice.</p>
           </div>
 
@@ -325,6 +396,62 @@ export default function ListeningPage() {
             >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Custom Practice"}
             </Button>
+
+            <div className="space-y-4">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Practices</Label>
+              <div className="space-y-2">
+                {recentPractices.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No saved practices found.</p>
+                ) : (
+                    <>
+                      {paginatedPractices.map((p) => (
+                          <button 
+                              key={p._id}
+                              onClick={() => loadExistingPractice(p)}
+                              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/50 transition-all text-left group"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                      <Headphones className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{p.topic}</p>
+                                      <Badge variant="secondary" className="text-[8px] h-3.5 uppercase">{p.difficulty}</Badge>
+                                  </div>
+                              </div>
+                              <Play className="w-4 h-4 text-slate-300 group-hover:text-blue-600 transition-all" />
+                          </button>
+                      ))}
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page {recentPage} of {totalPages}</p>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === 1}
+                              onClick={() => setRecentPage(p => p - 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4 rotate-180" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              disabled={recentPage === totalPages}
+                              onClick={() => setRecentPage(p => p + 1)}
+                              className="h-8 w-8 p-0 rounded-lg border-slate-200"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-4">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recommended Topics</Label>
