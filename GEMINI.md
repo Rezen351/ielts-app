@@ -35,6 +35,19 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
 ## Update Log
+### [2026-03-22]
+- **Feature (Persistence & Content Reuse):**
+  - **Recent Practices Dashboard:** Implemented a "Recent Practices" section in Listening, Reading, Writing, and Speaking modules. This allows users to pick up where they left off or revisit previously generated AI content, saving costs and token usage.
+  - **Pagination Engine:** Developed a client-side pagination system (5 items per page) for practice history to maintain a clean UI even with large amounts of saved content.
+  - **Atomic Content Retrieval:** Updated the content generation API to support `GET` requests for specific module practices, sorted by the most recent.
+- **Feature (AI Learning Insights):**
+  - **English Vibe Check ⚡:** Created a high-engagement dashboard feature that generates instant English learning tips (vocabulary, grammar, strategies) using Gen Z slang for a modern, relatable experience.
+  - **Idiomatic Localization:** Integrated a "Native Mode" that provides idiomatic translations (e.g., natural Indonesian slang) rather than literal translations, making the AI feel like a real native tutor.
+  - **On-Demand Refresh:** Implemented a real-time refresh mechanism allowing users to get new insights instantly without reloading the entire dashboard.
+- **Fix (Stability):**
+  - **Import Resolution:** Fixed `ReferenceError` related to missing `ChevronRight` icons across multiple dashboard pages.
+  - **API Efficiency:** Unified the Insight API to return both English and Translated versions in a single call, reducing latency and external translator dependency.
+
 ### [2026-03-20]
 - **Robust Generation Engine (v2.0):**
   - **Self-Correcting Loop:** Implemented a sophisticated dialogue loop in `generateWithRetry`. If the AI returns malformed or incomplete data, the system now provides specific feedback and forces the model to correct itself (up to 10 attempts).
