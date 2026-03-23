@@ -36,6 +36,9 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 
 ## Update Log
 ### [2026-03-22]
+- **Feature (Security):**
+  - **Change Password:** Implemented a secure password change system in the Settings page. This includes a dedicated API route (`/api/user/settings/change-password`) with `bcrypt` verification for current passwords and strict validation for new passwords.
+  - **Security UI:** Added a new "Security" card in the dashboard settings with intuitive fields for current password, new password, and password confirmation.
 - **Feature (Persistence & Content Reuse):**
   - **Recent Practices Dashboard:** Implemented a "Recent Practices" section in Listening, Reading, Writing, and Speaking modules. This allows users to pick up where they left off or revisit previously generated AI content, saving costs and token usage.
   - **Pagination Engine:** Developed a client-side pagination system (5 items per page) for practice history to maintain a clean UI even with large amounts of saved content.

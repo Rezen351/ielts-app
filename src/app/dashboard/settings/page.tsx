@@ -15,7 +15,8 @@ import {
   Heart,
   Trophy,
   User,
-  Mail
+  Mail,
+  Lock
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -27,6 +28,12 @@ export default function SettingsPage() {
   const [hobbies, setHobbies] = useState('');
   const [goalBand, setGoalBand] = useState('7.0');
   const [loading, setLoading] = useState(false);
+
+  // Password Change States
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -96,6 +103,51 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const response = await fetch('/api/user/settings/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          currentPassword,
+          newPassword
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Password Updated", { description: "Your password has been successfully changed." });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error("Error", { description: data.message });
+      }
+    } catch (err) {
+      toast.error("Network Error");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex justify-between items-center sticky top-0 z-10">
@@ -149,6 +201,70 @@ export default function SettingsPage() {
               </div>
             </div>
           </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
+          <CardHeader className="p-8 pb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Lock className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-xl font-bold text-slate-900">Security</CardTitle>
+            </div>
+            <CardDescription className="text-slate-500 font-medium">
+              Keep your account secure by using a strong password.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-4 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <Lock className="w-3 h-3" /> Current Password
+                </label>
+                <input 
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <Lock className="w-3 h-3" /> New Password
+                  </label>
+                  <input 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <Lock className="w-3 h-3" /> Confirm Password
+                  </label>
+                  <input 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="p-8 border-t border-slate-50 bg-slate-50/30 flex justify-end">
+            <Button 
+              onClick={handlePasswordChange} 
+              disabled={passwordLoading}
+              variant="outline"
+              className="border-slate-200 hover:bg-slate-100 text-slate-900 rounded-xl h-12 px-8 font-bold flex gap-2"
+            >
+              {passwordLoading ? "Updating..." : "Update Password"}
+            </Button>
+          </CardFooter>
         </Card>
 
         <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
