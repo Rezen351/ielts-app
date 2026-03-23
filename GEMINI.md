@@ -34,12 +34,21 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - **Verification:** After every fix, verify the build (`npm run build`).
 - **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
-## Update Log
 ### [2026-03-22]
+- **Feature (Learning Module):**
+  - **IELTS AI Tutor:** Implemented a personalized learning ecosystem at `/dashboard/learning`.
+  - **Adaptive Diagnostic Assessment:** New users undergo a 5-question diagnostic test to determine their English baseline. AI analyzes the results to skip known topics and focus on weaknesses.
+  - **Skill-based Roadmap:** Generates a personalized learning path (e.g., Cohesion, Grammar Range) based on the user's current band and target goal.
+  - **AI-Curated Blog Materials:** Generates high-quality, blog-style articles for each topic, including:
+    - **Mini-Explainers:** AI "did you know" sidebars for quick tips.
+    - **Quick Checks:** Interactive quizzes with instant feedback and explanations.
+    - **Smart Flashcards:** Flip-cards for key terminology and concepts.
+  - **Context-Aware Tutor:** Integrated the Chat Tutor to automatically receive the context of the current learning material, allowing for immediate and relevant assistance.
 - **Feature (Security):**
   - **Change Password:** Implemented a secure password change system in the Settings page. This includes a dedicated API route (`/api/user/settings/change-password`) with `bcrypt` verification for current passwords and strict validation for new passwords.
   - **Security UI:** Added a new "Security" card in the dashboard settings with intuitive fields for current password, new password, and password confirmation.
 - **Feature (Persistence & Content Reuse):**
+...
   - **Recent Practices Dashboard:** Implemented a "Recent Practices" section in Listening, Reading, Writing, and Speaking modules. This allows users to pick up where they left off or revisit previously generated AI content, saving costs and token usage.
   - **Pagination Engine:** Developed a client-side pagination system (5 items per page) for practice history to maintain a clean UI even with large amounts of saved content.
   - **Atomic Content Retrieval:** Updated the content generation API to support `GET` requests for specific module practices, sorted by the most recent.

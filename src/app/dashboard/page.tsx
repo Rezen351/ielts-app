@@ -95,10 +95,8 @@ export default function DashboardPage() {
 
   const sidebarLinks = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", active: true },
-    { label: "Listening", icon: Headphones, href: "/dashboard/listening" },
-    { label: "Reading", icon: BookOpen, href: "/dashboard/reading" },
-    { label: "Writing", icon: PenTool, href: "/dashboard/writing" },
-    { label: "Speaking", icon: Mic, href: "/dashboard/speaking" },
+    { label: "Learning", icon: Sparkles, href: "/dashboard/learning" },
+    { label: "Practice", icon: TrendingUp, href: "/dashboard/practice" },
     { label: "Examiner", icon: Trophy, href: "/dashboard/examiner" },
   ];
 

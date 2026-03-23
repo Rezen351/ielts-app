@@ -34,7 +34,11 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+  context?: string;
+}
+
+export default function ChatWidget({ context }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -125,7 +129,8 @@ export default function ChatWidget() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: messages.concat(userMessage).map(m => ({ role: m.role, content: m.content }))
+          messages: messages.concat(userMessage).map(m => ({ role: m.role, content: m.content })),
+          context: context || ""
         }),
       });
       const data = await response.json();

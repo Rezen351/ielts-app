@@ -127,3 +127,29 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  /* Enhanced Table Borders for Prose */
+  .prose table {
+    @apply border-collapse w-full border border-slate-200 rounded-xl overflow-hidden;
+    border: 1px solid oklch(0.922 0 0) !important;
+  }
+  .prose th, .prose td {
+    @apply border border-slate-200 p-3;
+    border: 1px solid oklch(0.922 0 0) !important;
+    padding: 0.75rem !important;
+  }
+  }
