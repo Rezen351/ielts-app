@@ -45,6 +45,10 @@ export async function POST(request: Request) {
           ...topic,
           status: topic.order === 1 ? 'Available' : 'Locked'
         })),
+        milestonePassed: false,
+        masteryScore: undefined,
+        masteryAnalysis: undefined,
+        milestoneQuiz: undefined,
         lastUpdated: new Date()
       },
       { new: true }

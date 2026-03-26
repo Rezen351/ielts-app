@@ -14,7 +14,10 @@ import {
   Lock,
   BrainCircuit,
   GraduationCap,
-  ArrowLeft
+  ArrowLeft,
+  XCircle,
+  RefreshCcw,
+  BadgeAlert
 } from 'lucide-react';
 import ChatWidget from '@/components/chat/ChatWidget';
 
@@ -26,6 +29,9 @@ export default function LearningDashboard() {
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<any>({});
   const [submittingDiagnostic, setSubmittingDiagnostic] = useState(false);
   const [refreshingRoadmap, setRefreshingRoadmap] = useState(false);
+  const [generatingMilestone, setGeneratingMilestone] = useState(false);
+  const [milestoneAnswers, setMilestoneAnswers] = useState<any>({});
+  const [submittingMilestone, setSubmittingMilestone] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -90,6 +96,55 @@ export default function LearningDashboard() {
       toast.error("Failed to refresh roadmap");
     } finally {
       setRefreshingRoadmap(false);
+    }
+  };
+
+  const handleStartMilestone = async () => {
+    setGeneratingMilestone(true);
+    const userId = user?._id || user?.id;
+    try {
+      const res = await fetch('/api/generate/learning/milestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoadmap({ ...roadmap, status: 'Milestone_Pending', milestoneQuiz: { questions: data.quiz } });
+        toast.success("Milestone Quiz generated!", { description: "Show us what you've learned." });
+      }
+    } catch (err) {
+      toast.error("Failed to generate milestone");
+    } finally {
+      setGeneratingMilestone(false);
+    }
+  };
+
+  const submitMilestone = async () => {
+    setSubmittingMilestone(true);
+    const userId = user?._id || user?.id;
+    try {
+      const res = await fetch('/api/evaluate/learning/milestone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          answers: Object.values(milestoneAnswers)
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchRoadmap(); // Refresh everything
+        if (data.passed) {
+          toast.success("Congratulations!", { description: "You passed the milestone!" });
+        } else {
+          toast.error("Not quite there yet.", { description: "Review the feedback and try again." });
+        }
+      }
+    } catch (err) {
+      toast.error("Failed to submit milestone");
+    } finally {
+      setSubmittingMilestone(false);
     }
   };
 
@@ -195,6 +250,73 @@ export default function LearningDashboard() {
     );
   }
 
+  // 1.1 Milestone Quiz View
+  if (roadmap?.status === 'Milestone_Pending' && roadmap.milestoneQuiz) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 flex flex-col items-center">
+        <div className="max-w-3xl w-full space-y-8">
+          <div className="text-center space-y-4">
+            <div className="bg-blue-600 text-white w-fit px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mx-auto">
+              Milestone Gatekeeper
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 leading-tight">Mastery Check</h1>
+            <p className="text-slate-500 font-medium max-w-md mx-auto">
+              Answer these questions based on the topics you've just finished to unlock the next level.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {roadmap.milestoneQuiz.questions.map((q: any, idx: number) => (
+              <Card key={idx} className="border-none shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden">
+                <CardHeader className="p-8 md:p-10 pb-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                      {roadmap.topics.find((t: any) => t.topicId === q.topicId)?.title || "General"}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      Question {idx + 1}/{roadmap.milestoneQuiz.questions.length}
+                    </span>
+                  </div>
+                  <CardTitle className="text-xl font-bold text-slate-800 leading-relaxed">
+                    {q.question}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 md:p-10 pt-0 grid grid-cols-1 gap-3">
+                  {q.options.map((opt: string) => (
+                    <button
+                      key={opt}
+                      onClick={() => setMilestoneAnswers({ ...milestoneAnswers, [idx]: opt })}
+                      className={`p-5 text-left rounded-2xl border-2 transition-all font-bold text-sm ${
+                        milestoneAnswers[idx] === opt 
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 ring-4 ring-blue-50' 
+                        : 'border-slate-50 hover:border-slate-200 text-slate-600 bg-slate-50/50'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="flex flex-col items-center gap-4 pt-8 pb-20">
+            <Button 
+              onClick={submitMilestone} 
+              disabled={submittingMilestone || Object.keys(milestoneAnswers).length < roadmap.milestoneQuiz.questions.length}
+              className="bg-slate-900 hover:bg-slate-800 text-white rounded-[24px] h-16 px-16 font-black text-xl shadow-2xl shadow-slate-200"
+            >
+              {submittingMilestone ? "Evaluating..." : "Submit Assessment"}
+            </Button>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              A minimum score of 80% is required to pass
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 2. Roadmap View
   const completedTopics = roadmap?.topics?.filter((t: any) => t.status === 'Completed').length || 0;
   const totalTopics = roadmap?.topics?.length || 0;
@@ -226,8 +348,10 @@ export default function LearningDashboard() {
                   Your Journey to Band {user?.goalBand || '7.5'}
                 </h1>
                 <p className="text-slate-500 font-medium">
-                  {roadmap.status === 'Completed' 
-                    ? "Congratulations! You've finished this sequence. Ready for more?"
+                  {roadmap.status === 'Completed' && roadmap.milestonePassed
+                    ? "Congratulations! You've mastered this level. Ready for more?"
+                    : roadmap.status === 'Remedial'
+                    ? "Don't worry! Let's focus on these specific areas to improve."
                     : `We've analyzed your level (Band ${roadmap.baselineBand}) and curated these skill-based topics.`}
                 </p>
               </div>
@@ -242,6 +366,69 @@ export default function LearningDashboard() {
               </div>
             </div>
 
+            {roadmap.status === 'Remedial' && (
+              <Card className="border-none bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-[32px] overflow-hidden relative shadow-2xl shadow-orange-100">
+                <div className="absolute top-0 right-0 p-8 opacity-20">
+                  <BadgeAlert className="w-32 h-32" />
+                </div>
+                <CardHeader className="p-8 md:p-12 pb-4">
+                  <div className="bg-white/20 backdrop-blur-md w-fit px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
+                    Remedial Focus
+                  </div>
+                  <CardTitle className="text-3xl md:text-4xl font-black leading-tight">
+                    Almost there!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 md:p-12 pt-0 space-y-8">
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                    <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
+                      <BrainCircuit className="w-5 h-5" /> Tutor Feedback:
+                    </h4>
+                    {(() => {
+                      try {
+                        const analysis = JSON.parse(roadmap.masteryAnalysis);
+                        return (
+                          <div className="space-y-4">
+                            <p className="text-orange-50 font-medium italic">"{analysis.feedback}"</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              {analysis.weakPoints.map((wp: any, i: number) => (
+                                <div key={i} className="bg-white/10 p-4 rounded-xl border border-white/10">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-200 mb-1">{wp.topic}</div>
+                                  <p className="text-xs font-bold leading-relaxed">{wp.suggestion}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      } catch {
+                        return <p className="text-orange-50 font-medium italic">"{roadmap.masteryAnalysis}"</p>;
+                      }
+                    })()}
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <Button 
+                      onClick={handleStartMilestone}
+                      disabled={generatingMilestone}
+                      className="bg-white text-orange-600 hover:bg-orange-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-orange-900/20 group"
+                    >
+                      <RefreshCcw className="mr-2 w-6 h-6 transition-transform group-hover:rotate-180 duration-500" />
+                      {generatingMilestone ? "Preparing..." : "Try Milestone Again"}
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      onClick={() => {
+                         const firstTopic = roadmap.topics.find((t: any) => t.status === 'Completed');
+                         if (firstTopic) window.location.href = `/dashboard/learning/${firstTopic.topicId}`;
+                      }}
+                      className="text-white hover:bg-white/10 rounded-2xl h-16 px-8 font-bold border border-white/20"
+                    >
+                      Review Completed Topics
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {roadmap.status === 'Completed' && (
               <Card className="border-none bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[32px] overflow-hidden relative shadow-2xl shadow-blue-200">
                 <div className="absolute top-0 right-0 p-8 opacity-20">
@@ -249,24 +436,39 @@ export default function LearningDashboard() {
                 </div>
                 <CardHeader className="p-8 md:p-12 pb-4">
                   <div className="bg-white/20 backdrop-blur-md w-fit px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
-                    Sequence Finished
+                    {roadmap.milestonePassed ? "Level Mastered" : "Final Step"}
                   </div>
                   <CardTitle className="text-3xl md:text-4xl font-black leading-tight">
-                    Level Up Your IELTS Skills!
+                    {roadmap.milestonePassed ? "Level Up Your IELTS Skills!" : "Unlock the Next Level"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-8 md:p-12 pt-0 space-y-8">
                   <p className="text-blue-50 font-medium text-lg max-w-xl">
-                    You've mastered these topics. To reach your goal of Band {user?.goalBand}, you need to tackle more advanced concepts.
+                    {roadmap.milestonePassed 
+                      ? `You've mastered these topics with a score of ${roadmap.masteryScore}%. Ready for the next sequence of Band ${user?.goalBand} training?`
+                      : "You've finished the lessons! Now, pass the Milestone Assessment to prove your mastery and unlock the next level."}
                   </p>
-                  <Button 
-                    onClick={handleRefreshRoadmap}
-                    disabled={refreshingRoadmap}
-                    className="bg-white text-blue-700 hover:bg-blue-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-blue-900/20 group"
-                  >
-                    {refreshingRoadmap ? "Generating..." : "Generate Level-Up Roadmap"}
-                    <ArrowRight className="ml-2 w-6 h-6 transition-transform group-hover:translate-x-1" />
-                  </Button>
+                  
+                  {roadmap.milestonePassed ? (
+                    <Button 
+                      onClick={handleRefreshRoadmap}
+                      disabled={refreshingRoadmap}
+                      className="bg-white text-blue-700 hover:bg-blue-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-blue-900/20 group"
+                    >
+                      {refreshingRoadmap ? "Generating..." : "Generate Level-Up Roadmap"}
+                      <ArrowRight className="ml-2 w-6 h-6 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleStartMilestone}
+                      disabled={generatingMilestone}
+                      className="bg-white text-blue-700 hover:bg-blue-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-blue-900/20 group"
+                    >
+                      <BrainCircuit className="mr-2 w-6 h-6" />
+                      {generatingMilestone ? "Generating Quiz..." : "Start Milestone Assessment"}
+                      <ArrowRight className="ml-2 w-6 h-6 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}

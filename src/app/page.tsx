@@ -53,24 +53,24 @@ export default function Home() {
       badge: "Diagnostic System"
     },
     { 
-      title: "AI-Curated Study Materials", 
-      desc: "Get blog-style lessons tailored to your hobbies and occupation. Includes interactive flashcards and quick checks.", 
-      icon: BookOpen,
+      title: "Milestone Gatekeeper", 
+      desc: "Pass AI-driven mastery checks to unlock new levels. If you struggle, we generate 'Remedial Deep Dives' just for you.", 
+      icon: ShieldCheck,
       color: "text-indigo-600",
       bg: "bg-indigo-50",
-      badge: "Blog Content"
+      badge: "Adaptive Mastery"
     },
     { 
-      title: "Comprehensive Practice Hub", 
-      desc: "Master Listening, Reading, Writing, and Speaking with dynamic AI-generated tests and real-time feedback.", 
-      icon: TrendingUp,
+      title: "AI-Curated Study Materials", 
+      desc: "Get blog-style lessons tailored to your background. Includes interactive flashcards and context-aware AI Tutoring.", 
+      icon: BookOpen,
       color: "text-sky-600",
       bg: "bg-sky-50",
-      badge: "All Modules"
+      badge: "Smart Content"
     },
     { 
       title: "Professional AI Examiner", 
-      desc: "Full-length simulations with official Band scoring (1.0 - 9.0) and deep analysis of your mistakes.", 
+      desc: "Full-length simulations with official Band scoring (1.0 - 9.0) and deep technical analysis of your mistakes.", 
       icon: Trophy,
       color: "text-amber-600",
       bg: "bg-amber-50",
@@ -132,25 +132,25 @@ export default function Home() {
             <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] px-4 md:px-6 py-2 rounded-full text-center">
               The All-in-One AI IELTS Examiner ⚡
             </Badge>
-            <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-900 tracking-tighter leading-[0.9] md:leading-[0.9]">
+            <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-900 tracking-tighter leading-[0.9] md:leading-[0.9] select-none">
               IELTS<span className="text-blue-600">Master</span>
             </h1>
             <p className="text-lg md:text-3xl font-bold text-slate-400 tracking-tight">
-              Shatter your limits. Achieve Band 8.5+
+              Shatter your limits. <span className="text-slate-900">Achieve Band 8.5+</span>
             </p>
           </div>
           
           <p className="text-lg md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed font-medium px-4">
-            The world's first IELTS preparation ecosystem that adapts to <span className="text-slate-900 font-bold underline decoration-blue-500 underline-offset-8">YOU</span>. Personalized roadmaps and professional simulations.
+            The world's first IELTS preparation ecosystem that adapts to <span className="text-slate-900 font-bold underline decoration-blue-500 underline-offset-[12px] decoration-4">YOU</span>. Personalized roadmaps and professional simulations.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 pt-6 px-4 w-full">
-            <Button size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 bg-slate-900 hover:bg-slate-800 text-white text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] shadow-2xl transition-all duration-300 hover:-translate-y-1" asChild>
+            <Button size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 bg-slate-900 hover:bg-slate-800 text-white text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] shadow-2xl transition-all duration-300 hover:-translate-y-2 active:scale-95" asChild>
               <Link href={isLoggedIn ? "/dashboard" : "/auth/signup"} className="flex items-center justify-center gap-3">
                 {isLoggedIn ? "Resume Training" : "Start Journey"} <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 border-slate-200 bg-white text-slate-600 text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] hover:bg-slate-50 transition-all duration-300" asChild>
+            <Button variant="outline" size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 border-2 border-slate-200 bg-white text-slate-600 text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] hover:bg-slate-50 hover:border-slate-300 transition-all duration-300" asChild>
               <Link href="#learning" className="flex items-center justify-center gap-2">
                 <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" /> Methodology
               </Link>
@@ -158,10 +158,13 @@ export default function Home() {
           </div>
 
           <div className="pt-12 flex flex-wrap items-center justify-center gap-6 text-slate-400 text-xs font-bold uppercase tracking-widest">
-            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-500 fill-current" /> 4.9/5 Student Rating</span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-300"></span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Professional Examiner AI</span>
-            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-300"></span>
+            <span className="flex items-center gap-2 group cursor-default">
+              <Star className="w-4 h-4 text-amber-500 fill-current group-hover:scale-125 transition-transform" /> 
+              4.9/5 Student Rating
+            </span>
+            <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-500" /> Professional AI Examiner</span>
+            <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-slate-200"></span>
             <span className="flex items-center gap-2 text-slate-900 font-black tracking-tighter">Diagnostic test included</span>
           </div>
         </div>
@@ -170,43 +173,43 @@ export default function Home() {
       {/* Daily Vibe Check Preview */}
       <section className="relative z-10 py-16 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-[40px] border border-slate-200 shadow-2xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+          <div className="bg-white rounded-[40px] border border-slate-200 shadow-2xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12 group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-1000"></div>
             
             <div className="flex-1 space-y-6 relative z-10">
               <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black uppercase tracking-widest text-[10px] px-3 py-1">
                 English Vibe Check ⚡
               </Badge>
               <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
-                Get Daily Insights In Your Language.
+                Master English with<br /><span className="text-blue-600 italic">Personality.</span>
               </h2>
               <p className="text-slate-500 text-lg font-medium leading-relaxed">
-                Start every day with AI-generated vocabulary and grammar tips using modern "Native Mode" translations. From Indonesian slang to Academic English, we keep it relatable.
+                Daily AI-generated tips using "Native Mode" translations. From local slang to Band 9 Academic English, we keep the learning process engaging and fun.
               </p>
               <div className="flex gap-4">
                 <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-500">
-                  Indonesian Support
+                  Multilingual
                 </div>
                 <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-500">
-                  Gen Z Logic
+                  Idiomatic
                 </div>
               </div>
             </div>
 
             <div className="flex-1 w-full relative z-10">
-              <Card className="border-slate-200 shadow-xl rounded-3xl overflow-hidden bg-white rotate-3 hover:rotate-0 transition-transform duration-500">
+              <Card className="border-slate-200 shadow-xl rounded-3xl overflow-hidden bg-white md:rotate-3 group-hover:rotate-0 transition-transform duration-700">
                 <CardHeader className="bg-slate-900 text-white p-6">
                   <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-70">
-                    <Zap className="w-3 h-3 fill-current" /> Tip of the day
+                    <Zap className="w-3 h-3 fill-current text-blue-400" /> Tip of the day
                   </div>
-                  <CardTitle className="text-lg font-bold mt-2 italic text-blue-300">"Hit the books"</CardTitle>
+                  <CardTitle className="text-xl font-bold mt-2 italic text-blue-300">"Break the ice"</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                   <p className="text-sm font-bold text-slate-900 leading-relaxed">
-                    Means "to study very hard." Use this in Speaking Part 1 to sound more like a native!
+                    Means "to make people feel more relaxed in a social situation." Perfect for Speaking Part 1 introduction!
                   </p>
                   <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-[11px] font-bold text-blue-700 italic">
-                    "Gaskeun belajar" - Tapi lebih profesional untuk IELTS.
+                    "Biar ga kaku pas ketemu penguji."
                   </div>
                 </CardContent>
               </Card>

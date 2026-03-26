@@ -65,7 +65,7 @@ const LearningMaterialSchema = new mongoose.Schema<ILearningMaterial>({
 export interface IUserRoadmap extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   baselineBand: number; // Calculated from diagnostic
-  status: 'Diagnostic_Pending' | 'Active' | 'Completed';
+  status: 'Diagnostic_Pending' | 'Active' | 'Completed' | 'Milestone_Pending' | 'Remedial';
   topics: {
     topicId: string;
     title: string;
@@ -73,6 +73,19 @@ export interface IUserRoadmap extends mongoose.Document {
     order: number;
     score?: number; // From quick check
   }[];
+  masteryScore?: number;
+  masteryAnalysis?: string; // AI generated feedback on weaknesses
+  milestoneQuiz?: {
+    questions: {
+      question: string;
+      options: string[];
+      correctAnswer: string;
+      explanation: string;
+      topicId: string; // To track which topic this question belongs to
+    }[];
+    userAnswers?: string[];
+  };
+  milestonePassed?: boolean;
   lastUpdated: Date;
 }
 
@@ -81,7 +94,7 @@ const UserRoadmapSchema = new mongoose.Schema<IUserRoadmap>({
   baselineBand: { type: Number, default: 0 },
   status: { 
     type: String, 
-    enum: ['Diagnostic_Pending', 'Active', 'Completed'],
+    enum: ['Diagnostic_Pending', 'Active', 'Completed', 'Milestone_Pending', 'Remedial'],
     default: 'Diagnostic_Pending' 
   },
   topics: [{
@@ -91,6 +104,19 @@ const UserRoadmapSchema = new mongoose.Schema<IUserRoadmap>({
     order: Number,
     score: Number
   }],
+  masteryScore: Number,
+  masteryAnalysis: String,
+  milestoneQuiz: {
+    questions: [{
+      question: String,
+      options: [String],
+      correctAnswer: String,
+      explanation: String,
+      topicId: String
+    }],
+    userAnswers: [String]
+  },
+  milestonePassed: { type: Boolean, default: false },
   lastUpdated: { type: Date, default: Date.now }
 });
 
