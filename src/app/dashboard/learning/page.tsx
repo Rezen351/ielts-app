@@ -29,19 +29,33 @@ export default function LearningDashboard() {
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+      fetchUserProfile(parsed.id || parsed._id);
     }
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/settings?userId=${userId}`);
+      const data = await response.json();
+      if (data.success) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch fresh user profile");
+    }
+  };
+
   useEffect(() => {
-    if (user?.id) {
+    if (user?._id || user?.id) {
       fetchRoadmap();
     }
   }, [user]);
 
   const fetchRoadmap = async () => {
+    const userId = user?._id || user?.id;
     try {
-      const roadmapRes = await fetch(`/api/user/insights/roadmap?userId=${user.id}`);
+      const roadmapRes = await fetch(`/api/user/insights/roadmap?userId=${userId}`);
       if (roadmapRes.ok) {
         const roadmapData = await roadmapRes.json();
         setRoadmap(roadmapData.roadmap);
@@ -55,8 +69,9 @@ export default function LearningDashboard() {
 
   const startDiagnostic = async () => {
     setLoading(true);
+    const userId = user?._id || user?.id;
     try {
-      const res = await fetch(`/api/user/insights/diagnostic?userId=${user.id}`);
+      const res = await fetch(`/api/user/insights/diagnostic?userId=${userId}`);
       const data = await res.json();
       setDiagnosticTest(data.questions);
     } catch (err) {
@@ -68,12 +83,13 @@ export default function LearningDashboard() {
 
   const submitDiagnostic = async () => {
     setSubmittingDiagnostic(true);
+    const userId = user?._id || user?.id;
     try {
       const res = await fetch('/api/user/insights/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
+          userId: userId,
           answers: diagnosticAnswers,
           goalBand: user.goalBand || 7.0
         })

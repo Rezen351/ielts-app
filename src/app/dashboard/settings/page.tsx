@@ -39,17 +39,32 @@ export default function SettingsPage() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      setUser(parsed);
-      setName(parsed.name || '');
-      setEmail(parsed.email || '');
-      setNativeLang(parsed.nativeLanguage || 'id');
-      setOccupation(parsed.occupation || 'Student');
-      setHobbies(Array.isArray(parsed.hobbies) ? parsed.hobbies.join(', ') : (parsed.hobbies || ''));
-      // Ensure formatting matches select options (e.g. "9.0")
-      const band = parsed.goalBand ? Number(parsed.goalBand).toFixed(1) : '7.0';
-      setGoalBand(band);
+      fetchUserProfile(parsed.id || parsed._id);
     }
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/user/settings?userId=${userId}`);
+      const data = await response.json();
+      if (data.success) {
+        const user = data.user;
+        setUser(user);
+        setName(user.name || '');
+        setEmail(user.email || '');
+        setNativeLang(user.nativeLanguage || 'id');
+        setOccupation(user.occupation || 'Student');
+        setHobbies(Array.isArray(user.hobbies) ? user.hobbies.join(', ') : (user.hobbies || ''));
+        const band = user.goalBand ? Number(user.goalBand).toFixed(1) : '7.0';
+        setGoalBand(band);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user settings");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim() || !email.trim()) {
@@ -58,12 +73,13 @@ export default function SettingsPage() {
     }
 
     setLoading(true);
+    const userId = user?.id || user?._id;
     try {
       const response = await fetch('/api/user/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
+          userId: userId,
           name,
           email,
           nativeLanguage: nativeLang,
@@ -79,6 +95,7 @@ export default function SettingsPage() {
         toast.success("Settings saved", { description: "Your profile has been updated." });
         
         // Update local storage with the full updated user object from backend
+        // We still keep ID in local storage for session
         const userToStore = {
           ...user,
           name: data.user.name,
@@ -89,7 +106,7 @@ export default function SettingsPage() {
           goalBand: data.user.goalBand
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
-        setUser(userToStore);
+        setUser(data.user);
         
         // Explicitly update the goalBand state with fixed decimal
         setGoalBand(Number(data.user.goalBand).toFixed(1));

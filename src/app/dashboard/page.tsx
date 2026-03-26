@@ -44,11 +44,24 @@ export default function DashboardPage() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      fetchProgress(parsedUser.id);
-      fetchInsight(parsedUser.id);
+      // Fetch fresh user data from database
+      fetchUserProfile(parsedUser.id || parsedUser._id);
+      fetchProgress(parsedUser.id || parsedUser._id);
+      fetchInsight(parsedUser.id || parsedUser._id);
     }
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/settings?userId=${userId}`);
+      const data = await response.json();
+      if (data.success) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user profile");
+    }
+  };
 
   const fetchProgress = async (userId: string) => {
     try {

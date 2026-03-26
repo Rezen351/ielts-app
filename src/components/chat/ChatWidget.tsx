@@ -56,6 +56,13 @@ export default function ChatWidget({ context }: ChatWidgetProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Check user native language from database
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      fetchUserLanguage(parsed.id || parsed._id);
+    }
+
     // Check if user is on an exam/practice page
     const checkPath = () => {
       const path = window.location.pathname;
@@ -63,8 +70,6 @@ export default function ChatWidget({ context }: ChatWidgetProps) {
     };
     
     checkPath();
-    const storedLang = localStorage.getItem('ielts-native-lang');
-    if (storedLang) setNativeLang(storedLang);
 
     // Listen for custom event to open chat
     const handleOpenChat = () => setIsOpen(true);
@@ -76,6 +81,18 @@ export default function ChatWidget({ context }: ChatWidgetProps) {
       window.removeEventListener('open-ielts-chat', handleOpenChat);
     };
   }, []);
+
+  const fetchUserLanguage = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/settings?userId=${userId}`);
+      const data = await response.json();
+      if (data.success && data.user.nativeLanguage) {
+        setNativeLang(data.user.nativeLanguage);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user language from database");
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -94,10 +111,13 @@ export default function ChatWidget({ context }: ChatWidgetProps) {
 
     setTranslatingId(messageId);
     try {
+      // If nativeLang is 'en' or not available, default to 'id' for translation service
+      const target = (!nativeLang || nativeLang === 'en') ? 'id' : nativeLang;
+
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: message.content, targetLang: nativeLang }),
+        body: JSON.stringify({ text: message.content, targetLang: target }),
       });
       const data = await response.json();
       if (data.success) {
