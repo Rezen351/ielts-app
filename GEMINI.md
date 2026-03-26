@@ -34,6 +34,22 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - **Verification:** After every fix, verify the build (`npm run build`).
 - **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
+### [2026-03-25]
+- **UI/UX (Responsiveness & 360px Optimization):**
+  - **Mobile-First Refinement:** Optimized all core dashboards (Main, Learning, Examiner) for 360px device width (iPhone SE standard).
+  - **Dynamic Card History:** Replaced rigid tables with a responsive card-based layout for test results on mobile devices.
+  - **Minimalist Practice Interface:** Redesigned practice headers to remove bulky titles, focusing on core session controls (Timer, Submit, Navigation).
+  - **Typography & Inputs:** Calibrated font sizes and input heights across `QuestionCard` and auth pages for better mobile ergonomics.
+- **Feature (Technical AI Evaluation):**
+  - **Deep Linguistic Feedback:** Enhanced AI evaluation prompts to provide granular technical breakdowns for Grammar (GRA) and Lexical Resource (LR).
+  - **Standardized Corrections:** Implemented a new feedback format: `Current -> Better (Rule/Reason)` for grammar and `Word -> Advanced Synonym (Example)` for vocabulary.
+  - **Technical Insights:** Refocused the "English Check" dashboard tool on advanced technical points (inversion, complex tenses) with mandatory usage examples.
+- **Architectural Fix (Data Consistency):**
+  - **Database Source of Truth:** Migrated user profile fetching (native language, goal band, etc.) from `localStorage` to a centralized Database API (`GET /api/user/settings`).
+  - **Real-time Chat Sync:** Ensured the Chat Tutor always uses the latest database-stored language preferences for its translation engine.
+- **Navigation Logic:**
+  - **Practice Hub Centricity:** Updated all practice module exit/completion flows to redirect users to the **Practice Hub** (`/dashboard/practice`) instead of the learning roadmap, creating a more logical training loop.
+
 ### [2026-03-22]
 - **Feature (Learning Module):**
   - **IELTS AI Tutor:** Implemented a personalized learning ecosystem at `/dashboard/learning`.
