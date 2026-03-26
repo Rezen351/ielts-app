@@ -30,8 +30,8 @@ export async function GET(request: Request) {
       Return ONLY a JSON object with this structure:
       {
         "title": "Topic Title",
-        "category": "Writing/Speaking/Reading/Listening/Grammar/Vocabulary",
-        "difficultyLevel": "Beginner/Intermediate/Advanced",
+        "category": "Must be EXACTLY one of: Writing, Speaking, Reading, Listening, Grammar, Vocabulary",
+        "difficultyLevel": "Must be EXACTLY one of: Beginner, Intermediate, Advanced",
         "content": {
           "sections": [
             { 
@@ -56,7 +56,20 @@ export async function GET(request: Request) {
 
       const userPrompt = `Generate a detailed learning module for the topic: "${topicId}". Ensure it is educational, encouraging, and follows official IELTS standards.`;
       
-      const aiResponse = await generateWithRetry(systemPrompt, userPrompt);
+      const validator = (data: any) => {
+        const validCategories = ['Writing', 'Speaking', 'Reading', 'Listening', 'Grammar', 'Vocabulary'];
+        const validLevels = ['Beginner', 'Intermediate', 'Advanced'];
+
+        if (!validCategories.includes(data.category)) {
+          return { valid: false, reason: `Invalid category: "${data.category}". Must be one of: ${validCategories.join(', ')}` };
+        }
+        if (!validLevels.includes(data.difficultyLevel)) {
+          return { valid: false, reason: `Invalid difficultyLevel: "${data.difficultyLevel}". Must be one of: ${validLevels.join(', ')}` };
+        }
+        return { valid: true };
+      };
+
+      const aiResponse = await generateWithRetry(systemPrompt, userPrompt, { validator });
       
       material = await LearningMaterial.create({
         topicId,

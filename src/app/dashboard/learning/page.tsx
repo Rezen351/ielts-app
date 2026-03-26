@@ -25,6 +25,7 @@ export default function LearningDashboard() {
   const [diagnosticTest, setDiagnosticTest] = useState<any>(null);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<any>({});
   const [submittingDiagnostic, setSubmittingDiagnostic] = useState(false);
+  const [refreshingRoadmap, setRefreshingRoadmap] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -64,6 +65,31 @@ export default function LearningDashboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshRoadmap = async () => {
+    setRefreshingRoadmap(true);
+    const userId = user?._id || user?.id;
+    try {
+      const res = await fetch('/api/user/insights/roadmap/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          goalBand: user.goalBand || 7.0,
+          baselineBand: roadmap.baselineBand
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoadmap(data.roadmap);
+        toast.success("Level-up roadmap generated!", { description: "New advanced topics unlocked." });
+      }
+    } catch (err) {
+      toast.error("Failed to refresh roadmap");
+    } finally {
+      setRefreshingRoadmap(false);
     }
   };
 
@@ -200,7 +226,9 @@ export default function LearningDashboard() {
                   Your Journey to Band {user?.goalBand || '7.5'}
                 </h1>
                 <p className="text-slate-500 font-medium">
-                  We've analyzed your level (Band {roadmap.baselineBand}) and curated these skill-based topics.
+                  {roadmap.status === 'Completed' 
+                    ? "Congratulations! You've finished this sequence. Ready for more?"
+                    : `We've analyzed your level (Band ${roadmap.baselineBand}) and curated these skill-based topics.`}
                 </p>
               </div>
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
@@ -213,6 +241,35 @@ export default function LearningDashboard() {
                 </div>
               </div>
             </div>
+
+            {roadmap.status === 'Completed' && (
+              <Card className="border-none bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[32px] overflow-hidden relative shadow-2xl shadow-blue-200">
+                <div className="absolute top-0 right-0 p-8 opacity-20">
+                  <Sparkles className="w-32 h-32" />
+                </div>
+                <CardHeader className="p-8 md:p-12 pb-4">
+                  <div className="bg-white/20 backdrop-blur-md w-fit px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
+                    Sequence Finished
+                  </div>
+                  <CardTitle className="text-3xl md:text-4xl font-black leading-tight">
+                    Level Up Your IELTS Skills!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 md:p-12 pt-0 space-y-8">
+                  <p className="text-blue-50 font-medium text-lg max-w-xl">
+                    You've mastered these topics. To reach your goal of Band {user?.goalBand}, you need to tackle more advanced concepts.
+                  </p>
+                  <Button 
+                    onClick={handleRefreshRoadmap}
+                    disabled={refreshingRoadmap}
+                    className="bg-white text-blue-700 hover:bg-blue-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-blue-900/20 group"
+                  >
+                    {refreshingRoadmap ? "Generating..." : "Generate Level-Up Roadmap"}
+                    <ArrowRight className="ml-2 w-6 h-6 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               <div className="space-y-4 md:space-y-6">

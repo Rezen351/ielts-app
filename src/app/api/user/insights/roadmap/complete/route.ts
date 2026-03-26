@@ -29,9 +29,13 @@ export async function POST(request: Request) {
     roadmap.topics[topicIndex].status = 'Completed';
 
     // Unlock the next topic
+    let nextTopicId = null;
     const nextTopic = roadmap.topics.find((t: any) => t.order === roadmap.topics[topicIndex].order + 1);
-    if (nextTopic && nextTopic.status === 'Locked') {
-      nextTopic.status = 'Available';
+    if (nextTopic) {
+      if (nextTopic.status === 'Locked') {
+        nextTopic.status = 'Available';
+      }
+      nextTopicId = nextTopic.topicId;
     }
 
     // Check if all topics are completed
@@ -43,7 +47,12 @@ export async function POST(request: Request) {
     roadmap.lastUpdated = new Date();
     await roadmap.save();
 
-    return NextResponse.json({ success: true, roadmap });
+    return NextResponse.json({ 
+      success: true, 
+      roadmap,
+      nextTopicId,
+      allCompleted
+    });
 
   } catch (error: any) {
     console.error('Roadmap update error:', error);

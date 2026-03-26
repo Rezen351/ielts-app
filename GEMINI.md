@@ -34,6 +34,17 @@ You are an expert **Senior Full-stack Developer** and **Certified IELTS Examiner
 - **Verification:** After every fix, verify the build (`npm run build`).
 - **Git Protocol:** After a successful build, provide instructions to `git add`, `commit`, and `push`.
 
+### [2026-03-26]
+- **Feature Proposal (Milestone Gatekeeper):**
+  - **Concept:** Implementation of a "Milestone Assessment" layer between roadmap levels.
+  - **Logic:** Before advancing to a new learning level, users must pass a comprehensive diagnostic test (Milestone Quiz) covering previous topics.
+  - **Adaptive Branching:** 
+    - **Pass (>= 80%):** Unlock next level + Generate new content.
+    - **Fail (< 80%):** AI identifies specific weaknesses and generates a "Remedial Deep Dive" module (e.g., focused Grammar/Vocab) instead of the standard next level.
+  - **Technical Architecture:** Planned updates to `Learning` model (status: `milestone`, `remedial`) and new evaluation APIs for performance analysis.
+- **Workflow:** Updated `TODO.md` with milestone-related tasks.
+- **Status:** Planning phase completed. Ready for implementation.
+
 ### [2026-03-25]
 - **UI/UX (Responsiveness & 360px Optimization):**
   - **Mobile-First Refinement:** Optimized all core dashboards (Main, Learning, Examiner) for 360px device width (iPhone SE standard).

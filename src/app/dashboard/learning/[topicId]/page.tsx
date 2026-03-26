@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { 
   ArrowLeft, 
+  ArrowRight,
   Sparkles, 
   CheckCircle2, 
   XCircle,
@@ -28,15 +29,23 @@ export default function MaterialPage() {
   const [material, setMaterial] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [nextTopicId, setNextTopicId] = useState<string | null>(null);
+  const [isFinishedAll, setIsFinishedAll] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<any>({});
   const [showQuizFeedback, setShowQuizFeedback] = useState<any>({});
   const [flippedCards, setFlippedCards] = useState<any>({});
 
   useEffect(() => {
     fetchMaterial();
+    // Reset states on topic change
+    setCompleted(false);
+    setNextTopicId(null);
+    setIsFinishedAll(false);
   }, [topicId]);
 
   const fetchMaterial = async () => {
+    setLoading(true);
     try {
       const res = await fetch(`/api/generate/learning?topicId=${topicId}`);
       const data = await res.json();
@@ -70,14 +79,16 @@ export default function MaterialPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user.id || user._id,
           topicId: topicId
         })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Topic completed!", { description: "Next topic unlocked." });
-        router.back();
+        toast.success("Topic completed!", { description: data.allCompleted ? "Congratulations! You finished the roadmap." : "Next topic unlocked." });
+        setNextTopicId(data.nextTopicId);
+        setIsFinishedAll(data.allCompleted);
+        setCompleted(true);
       } else {
         toast.error("Failed to update progress");
       }
@@ -93,8 +104,52 @@ export default function MaterialPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/30 flex flex-col">
+      {/* Completion Modal/Overlay */}
+      {completed && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <Card className="max-w-md w-full border-none shadow-2xl rounded-[40px] overflow-hidden bg-white text-center p-8 md:p-12 space-y-8 scale-in-center">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+              <CheckCircle2 className="w-12 h-12 text-green-600" />
+            </div>
+            <div className="space-y-4">
+              <h2 className="text-3xl font-extrabold text-slate-900 leading-tight">Great job!</h2>
+              <p className="text-slate-500 font-medium">
+                You've successfully completed <span className="text-slate-900 font-bold">"{material.title}"</span>. You're one step closer to your goal band!
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {nextTopicId && !isFinishedAll ? (
+                <Button 
+                  onClick={() => {
+                    setCompleted(false);
+                    router.push(`/dashboard/learning/${nextTopicId}`);
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-14 font-bold text-lg shadow-lg shadow-blue-100"
+                >
+                  Continue to Next Topic <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              ) : isFinishedAll ? (
+                <Button 
+                  onClick={() => router.push('/dashboard/learning')}
+                  className="bg-green-600 hover:bg-green-700 text-white rounded-2xl h-14 font-bold text-lg shadow-lg shadow-green-100"
+                >
+                  View Final Results <Sparkles className="ml-2 w-5 h-5" />
+                </Button>
+              ) : null}
+              <Button 
+                variant="ghost"
+                onClick={() => router.push('/dashboard/learning')}
+                className="text-slate-400 font-bold hover:bg-slate-50 rounded-2xl h-12"
+              >
+                Back to Roadmap
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex items-center gap-6 sticky top-0 z-20">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/learning')} className="rounded-full">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex flex-col">
