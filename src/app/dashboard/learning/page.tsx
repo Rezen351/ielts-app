@@ -97,35 +97,35 @@ export default function LearningDashboard() {
   if (diagnosticTest) {
     return (
       <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-        <div className="max-w-3xl mx-auto space-y-8">
+        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
           <div className="text-center space-y-2">
-            <BrainCircuit className="w-12 h-12 text-blue-600 mx-auto" />
-            <h1 className="text-3xl font-bold text-slate-900">Skill Assessment</h1>
-            <p className="text-slate-500">Answer these 5 questions to find your starting point.</p>
+            <BrainCircuit className="w-10 h-10 md:w-12 md:h-12 text-blue-600 mx-auto" />
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Skill Assessment</h1>
+            <p className="text-sm md:text-base text-slate-500">Answer these 5 questions to find your starting point.</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {diagnosticTest.map((q: any, idx: number) => (
               <Card key={q.id} className="border-slate-200 shadow-sm rounded-2xl">
-                <CardHeader className="pb-3">
+                <CardHeader className="p-5 md:p-6 pb-3">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
                       {q.category}
                     </span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Question {idx + 1}/5
                     </span>
                   </div>
-                  <CardTitle className="text-lg font-bold text-slate-800 leading-relaxed">
+                  <CardTitle className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">
                     {q.question}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <CardContent className="p-5 md:p-6 pt-0 grid grid-cols-1 gap-2 md:gap-3">
                   {q.options.map((opt: string) => (
                     <button
                       key={opt}
                       onClick={() => setDiagnosticAnswers({ ...diagnosticAnswers, [q.id]: opt })}
-                      className={`p-4 text-left rounded-xl border-2 transition-all font-medium text-sm ${
+                      className={`p-3 md:p-4 text-left rounded-xl border-2 transition-all font-medium text-xs md:text-sm ${
                         diagnosticAnswers[q.id] === opt 
                         ? 'border-blue-600 bg-blue-50 text-blue-700' 
                         : 'border-slate-100 hover:border-slate-300 text-slate-600'
@@ -154,6 +154,10 @@ export default function LearningDashboard() {
   }
 
   // 2. Roadmap View
+  const completedTopics = roadmap?.topics?.filter((t: any) => t.status === 'Completed').length || 0;
+  const totalTopics = roadmap?.topics?.length || 0;
+  const completionRate = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex justify-between items-center sticky top-0 z-10">
@@ -176,7 +180,7 @@ export default function LearningDashboard() {
                 <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest text-xs uppercase">
                   <Target className="w-4 h-4" /> Personalized Roadmap
                 </div>
-                <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                   Your Journey to Band {user?.goalBand || '7.5'}
                 </h1>
                 <p className="text-slate-500 font-medium">
@@ -194,35 +198,35 @@ export default function LearningDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              <div className="space-y-4 md:space-y-6">
+                <h2 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-blue-600" /> Learning Sequence
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {roadmap.topics.map((topic: any, idx: number) => (
                     <Link 
                       key={topic.topicId} 
                       href={topic.status === 'Locked' ? '#' : `/dashboard/learning/${topic.topicId}`}
-                      className={`block border-slate-200 shadow-none rounded-[24px] transition-all overflow-hidden bg-white border ${
+                      className={`block border-slate-200 shadow-none rounded-[20px] md:rounded-[24px] transition-all overflow-hidden bg-white border ${
                         topic.status === 'Locked' ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-blue-300 hover:shadow-lg hover:shadow-blue-50 cursor-pointer'
                       }`}
                     >
-                      <div className="p-6 flex items-center gap-6">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                      <div className="p-4 md:p-6 flex items-center gap-4 md:gap-6">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-base md:text-lg shrink-0 ${
                           topic.status === 'Completed' ? 'bg-green-100 text-green-600' :
                           topic.status === 'Available' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
                         }`}>
-                          {topic.status === 'Completed' ? <CheckCircle2 className="w-6 h-6" /> : idx + 1}
+                          {topic.status === 'Completed' ? <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> : idx + 1}
                         </div>
-                        <div className="flex-1">
-                          <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{topic.category}</div>
-                          <h3 className="font-bold text-slate-900 text-lg">{topic.title}</h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[8px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-0.5 md:mb-1">{topic.category}</div>
+                          <h3 className="font-bold text-slate-900 text-base md:text-lg truncate">{topic.title}</h3>
                         </div>
                         {topic.status === 'Locked' ? (
-                          <Lock className="w-5 h-5 text-slate-300" />
+                          <Lock className="w-4 h-4 md:w-5 md:h-5 text-slate-300 shrink-0" />
                         ) : (
-                          <ArrowRight className="w-5 h-5 text-blue-600" />
+                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-blue-600 shrink-0" />
                         )}
                       </div>
                     </Link>
@@ -240,7 +244,7 @@ export default function LearningDashboard() {
                     <CardDescription className="text-slate-400">Personalized insight for your level.</CardDescription>
                   </CardHeader>
                   <CardContent className="p-8 pt-0">
-                    <p className="text-lg leading-relaxed text-slate-200 italic">
+                    <p className="text-base md:text-lg leading-relaxed text-slate-200 italic">
                       "Since you're aiming for Band {user?.goalBand}, focusing on complex sentence synthesis will be your fastest route to a higher score. Your baseline shows great vocabulary, but let's connect those ideas better!"
                     </p>
                   </CardContent>
@@ -250,12 +254,12 @@ export default function LearningDashboard() {
                   <h2 className="text-xl font-bold text-slate-800">Quick Stats</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white p-6 rounded-3xl border border-slate-200 text-center">
-                      <div className="text-3xl font-bold text-blue-600">0%</div>
+                      <div className="text-3xl font-bold text-blue-600">{completionRate}%</div>
                       <div className="text-xs font-bold text-slate-400 uppercase mt-2">Completion</div>
                     </div>
                     <div className="bg-white p-6 rounded-3xl border border-slate-200 text-center">
-                      <div className="text-3xl font-bold text-green-600">0</div>
-                      <div className="text-xs font-bold text-slate-400 uppercase mt-2">Notes Saved</div>
+                      <div className="text-3xl font-bold text-green-600">{completedTopics}</div>
+                      <div className="text-xs font-bold text-slate-400 uppercase mt-2">Topics Done</div>
                     </div>
                   </div>
                 </div>

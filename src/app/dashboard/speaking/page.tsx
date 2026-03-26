@@ -326,7 +326,7 @@ export default function SpeakingPage() {
           </Card>
           
           <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent">
-            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Dashboard</Link>
+            <Link href="/dashboard/practice" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Practice Hub</Link>
           </Button>
         </div>
       </div>
@@ -351,38 +351,37 @@ export default function SpeakingPage() {
           </Button>
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-violet-600" />
-            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Speaking Coach</h1>
           </div>
         </div>
-        <Badge className="bg-violet-50 text-violet-600 border-violet-100 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[10px]">
+        <Badge className="bg-violet-50 text-violet-600 border-violet-100 px-4 py-1.5 rounded-full font-bold uppercase tracking-widest text-[9px] md:text-[10px] whitespace-normal h-auto max-w-[150px] md:max-w-none text-center">
           Topic: {topic.toUpperCase()}
         </Badge>
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
-        <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-white p-12 text-center space-y-8">
-          <div className="mx-auto w-24 h-24 bg-violet-100 rounded-[32px] flex items-center justify-center text-violet-600 relative">
-            <Bot className="w-12 h-12" />
-            <div className={`absolute -bottom-2 -right-2 w-8 h-8 ${isRecording ? 'bg-red-500' : 'bg-emerald-500'} border-4 border-white rounded-full flex items-center justify-center transition-colors shadow-lg`}>
-              {isRecording ? <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div> : <div className="w-2 h-2 bg-white rounded-full"></div>}
+        <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[32px] md:rounded-[40px] overflow-hidden bg-white p-6 md:p-12 text-center space-y-6 md:space-y-8">
+          <div className="mx-auto w-20 h-20 md:w-24 md:h-24 bg-violet-100 rounded-[28px] md:rounded-[32px] flex items-center justify-center text-violet-600 relative">
+            <Bot className="w-10 h-10 md:w-12 md:h-12" />
+            <div className={`absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-6 h-6 md:w-8 md:h-8 ${isRecording ? 'bg-red-500' : 'bg-emerald-500'} border-4 border-white rounded-full flex items-center justify-center transition-colors shadow-lg`}>
+              {isRecording ? <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-white rounded-full animate-pulse"></div> : <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-white rounded-full"></div>}
             </div>
           </div>
           
-          <div className="space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">AI Examiner asks:</p>
-            <p className="text-3xl font-black text-slate-900 leading-tight max-w-2xl mx-auto tracking-tight">
+          <div className="space-y-3 md:space-y-4">
+            <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] text-slate-400">AI Examiner asks:</p>
+            <p className="text-xl md:text-3xl font-black text-slate-900 leading-tight max-w-2xl mx-auto tracking-tight break-words">
               "{questions[currentPart]?.text}"
             </p>
           </div>
 
           <div className="flex justify-center gap-4">
             {!isRecording ? (
-              <Button size="lg" onClick={startStreaming} className="h-16 px-10 rounded-[28px] bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-2xl shadow-violet-200 flex gap-4 text-base transition-all active:scale-95">
-                <Mic className="w-5 h-5" /> Start Speaking
+              <Button size="lg" onClick={startStreaming} className="h-14 md:h-16 px-8 md:px-10 rounded-[24px] md:rounded-[28px] bg-violet-600 hover:bg-violet-700 text-white font-bold shadow-2xl shadow-violet-200 flex gap-3 md:gap-4 text-sm md:text-base transition-all active:scale-95">
+                <Mic className="w-4 h-4 md:w-5 md:h-5" /> Start Speaking
               </Button>
             ) : (
-              <Button size="lg" onClick={stopStreaming} className="h-16 px-10 rounded-[28px] bg-red-600 hover:bg-red-700 text-white font-bold shadow-2xl shadow-red-200 flex gap-4 text-base animate-pulse">
-                <StopCircle className="w-5 h-5" /> Finish Answer
+              <Button size="lg" onClick={stopStreaming} className="h-14 md:h-16 px-8 md:px-10 rounded-[24px] md:rounded-[28px] bg-red-600 hover:bg-red-700 text-white font-bold shadow-2xl shadow-red-200 flex gap-3 md:gap-4 text-sm md:text-base animate-pulse">
+                <StopCircle className="w-4 h-4 md:w-5 md:h-5" /> Finish Answer
               </Button>
             )}
           </div>
@@ -431,6 +430,32 @@ export default function SpeakingPage() {
                         </div>
                       ))}
                     </div>
+
+                    {feedback.errors && feedback.errors.length > 0 && (
+                      <div className="space-y-4 border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grammar & Accuracy</p>
+                        <div className="space-y-2">
+                          {feedback.errors.map((err: string, i: number) => (
+                            <div key={i} className="p-3 rounded-xl bg-red-50 border border-red-100 text-xs font-medium text-red-800 leading-relaxed">
+                              {err}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {feedback.vocabularyUpgrades && feedback.vocabularyUpgrades.length > 0 && (
+                      <div className="space-y-4 border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Vocabulary Upgrades</p>
+                        <div className="space-y-2">
+                          {feedback.vocabularyUpgrades.map((vocab: string, i: number) => (
+                            <div key={i} className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 leading-relaxed">
+                              {vocab}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {questions[currentPart]?.sampleAnswer && (
                         <div className="pt-4 border-t border-slate-100">

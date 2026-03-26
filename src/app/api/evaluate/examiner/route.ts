@@ -84,14 +84,15 @@ Evaluate the student's performance based on the provided answers.
 **EVALUATION TASKS:**
 1. Evaluate Writing Task 1 & 2 individually using Band Descriptors (Task Response, Coherence, Lexical, Grammar).
 2. Evaluate Speaking Part 1, 2, & 3 using Band Descriptors (Fluency, Lexical, Grammar, Pronunciation).
-3. Calculate the Overall Band by averaging all 4 modules (L, R, W, S) and rounding to the nearest 0.5.
+3. **TECHNICAL FOCUS:** For Writing and Speaking, identify specific grammar errors (Current -> Better) and suggest vocabulary upgrades (Band 7.0+).
+4. Calculate the Overall Band by averaging all 4 modules (L, R, W, S) and rounding to the nearest 0.5.
 
 **OUTPUT FORMAT:**
 You must provide a VALID JSON object. 
 IMPORTANT: 
 1. The "discussion" object MUST include EVERY SINGLE questionId present in the test, even if the student left it blank.
 2. For unanswered questions, set "isCorrect": false and "userAnswer": "(No Answer)", but provide the full "correctAnswer" and "explanation".
-3. For Writing/Speaking with no content, provide a "Model Answer" or "Recommended Approach" in the discussion field.
+3. For Writing/Speaking, include "technicalCheck" with "grammarFixes" (list of strings: 'Current -> Better (Rule)') and "vocabularyUpgrades" (list of strings: 'Common -> Advanced (Example Sentence)').
 
 {
   "overallBand": 0.0,
@@ -105,8 +106,15 @@ IMPORTANT:
   "discussion": {
     "listening": [{ "questionId": "s0q1", "isCorrect": true, "userAnswer": "...", "correctAnswer": "...", "explanation": "..." }], 
     "reading": [{ "questionId": "s0q1", "isCorrect": false, "userAnswer": "...", "correctAnswer": "...", "explanation": "..." }],
-    "writing": { "task1": {"strengths": "...", "weaknesses": "...", "improvement": "...", "modelAnswer": "..."}, "task2": {"strengths": "...", "weaknesses": "...", "improvement": "...", "modelAnswer": "..."} },
-    "speaking": { "part1": {"feedback": "...", "recommendedResponse": "..."}, "part2": {"feedback": "...", "recommendedResponse": "..."}, "part3": {"feedback": "...", "recommendedResponse": "..."} }
+    "writing": { 
+      "task1": {"strengths": "...", "weaknesses": "...", "technicalCheck": {"grammarFixes": [], "vocabularyUpgrades": []}, "modelAnswer": "..."}, 
+      "task2": {"strengths": "...", "weaknesses": "...", "technicalCheck": {"grammarFixes": [], "vocabularyUpgrades": []}, "modelAnswer": "..."} 
+    },
+    "speaking": { 
+      "part1": {"feedback": "...", "technicalCheck": {"grammarFixes": [], "vocabularyUpgrades": []}, "recommendedResponse": "..."}, 
+      "part2": {"feedback": "...", "technicalCheck": {"grammarFixes": [], "vocabularyUpgrades": []}, "recommendedResponse": "..."}, 
+      "part3": {"feedback": "...", "technicalCheck": {"grammarFixes": [], "vocabularyUpgrades": []}, "recommendedResponse": "..."} 
+    }
   },
   "detailedFeedback": "...",
   "suggestions": []

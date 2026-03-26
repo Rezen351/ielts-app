@@ -219,7 +219,7 @@ return (
         <div className="space-y-3 sm:space-y-4 w-full">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             {/* UKURAN QUOTE DIPERKECIL DI SINI */}
-            <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-bold text-slate-900 leading-relaxed tracking-tight flex-1 ${!insight && 'animate-pulse bg-slate-100 h-16 sm:h-20 rounded-xl md:rounded-2xl w-full max-w-2xl'}`}>
+            <p className={`text-[13px] sm:text-base md:text-lg lg:text-xl font-bold text-slate-900 leading-relaxed tracking-tight flex-1 ${!insight && 'animate-pulse bg-slate-100 h-16 sm:h-20 rounded-xl md:rounded-2xl w-full max-w-2xl'}`}>
               {insight ? `"${insight.content}"` : ""}
             </p>
             {insight && (
@@ -231,10 +231,10 @@ return (
                   setInsightTranslated('');
                   fetchInsight(user.id);
                 }}
-                className="text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl shrink-0 h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center transition-colors"
+                className="text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl shrink-0 h-7 w-7 sm:h-10 sm:w-10 flex items-center justify-center transition-colors"
                 title="Ganti Vibe"
               >
-                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+                <RefreshCw className="w-3 h-3 sm:w-5 sm:h-5" />
               </Button>
             )}
           </div>
@@ -271,21 +271,53 @@ return (
           {/* Hero Stats */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-6">
-              <div className="bg-slate-900 rounded-[32px] p-6 md:p-8 text-white relative overflow-hidden">
-                <div className="relative z-10 space-y-4">
-                  <Badge className="bg-blue-500/20 text-blue-300 border-0 uppercase tracking-widest text-[10px] font-bold">Recommended for you</Badge>
-                  <h2 className="text-xl md:text-2xl font-bold tracking-tight leading-snug max-w-md">
-                    {progress?.recommendation || "Loading your personalized plan..."}
-                  </h2>
-                  <Button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold h-10 md:h-11 w-full sm:w-auto" 
-                    onClick={handleOpenChat}
-                  >
-                    Discuss with AI <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
+              {/* Resume Practice Card */}
+              {progress?.latestSession ? (
+                <div className="bg-white border border-slate-200 rounded-[32px] p-6 md:p-8 relative overflow-hidden group shadow-sm hover:shadow-md transition-all">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-blue-600 font-bold tracking-widest text-[10px] uppercase">
+                        <Zap className="w-3 h-3 fill-current" /> Continue Practice
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        {progress.latestSession.module}: {progress.latestSession.topic}
+                      </h2>
+                      <p className="text-slate-500 text-sm font-medium">
+                        Last practiced on {new Date(progress.latestSession.date).toLocaleDateString()} • Score: Band {progress.latestSession.score}
+                      </p>
+                    </div>
+                    <Button 
+                      asChild
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 font-bold h-12 shadow-lg shadow-blue-200 transition-all group-hover:scale-105"
+                    >
+                      <Link href={`/dashboard/${progress.latestSession.module.toLowerCase()}`}>
+                        Resume Now <ArrowRight className="ml-2 w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                  <div className="absolute -bottom-6 -right-6 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+                    {progress.latestSession.module === 'Listening' ? <Headphones className="w-32 h-32" /> : 
+                     progress.latestSession.module === 'Reading' ? <BookOpen className="w-32 h-32" /> : 
+                     progress.latestSession.module === 'Writing' ? <PenTool className="w-32 h-32" /> : <Mic className="w-32 h-32" />}
+                  </div>
                 </div>
-                <Sparkles className="absolute top-8 right-8 w-24 h-24 text-white/5 rotate-12" />
-              </div>
+              ) : (
+                <div className="bg-slate-900 rounded-[32px] p-6 md:p-8 text-white relative overflow-hidden">
+                  <div className="relative z-10 space-y-4">
+                    <Badge className="bg-blue-500/20 text-blue-300 border-0 uppercase tracking-widest text-[10px] font-bold">Recommended for you</Badge>
+                    <h2 className="text-xl md:text-2xl font-bold tracking-tight leading-snug max-w-md">
+                      {progress?.recommendation || "Loading your personalized plan..."}
+                    </h2>
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold h-10 md:h-11 w-full sm:w-auto" 
+                      onClick={handleOpenChat}
+                    >
+                      Discuss with AI <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Sparkles className="absolute top-8 right-8 w-24 h-24 text-white/5 rotate-12" />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[

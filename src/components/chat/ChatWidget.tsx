@@ -167,7 +167,7 @@ export default function ChatWidget({ context }: ChatWidgetProps) {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-[380px] h-[600px] max-h-[85vh] flex flex-col z-50 animate-in slide-in-from-bottom-5 duration-300">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-6 md:bottom-6 w-[calc(100%-32px)] sm:w-[380px] h-[600px] max-h-[85vh] flex flex-col z-50 animate-in slide-in-from-bottom-5 duration-300">
       <Card className="flex-1 flex flex-col shadow-2xl border-slate-200 overflow-hidden bg-white rounded-3xl relative">
         <header className="bg-blue-600 p-4 flex justify-between items-center text-white shrink-0">
           <div className="flex items-center gap-3">

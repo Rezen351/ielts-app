@@ -635,9 +635,9 @@ export default function ExaminerPage() {
           </Button>
           
           <Tabs defaultValue="new-test" className="w-full">
-            <TabsList className="grid w-[400px] grid-cols-2 h-14 bg-white/50 backdrop-blur rounded-2xl p-1 mb-8 shadow-sm">
-                <TabsTrigger value="new-test" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-bold">New Test</TabsTrigger>
-                <TabsTrigger value="history" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-bold">History & Results</TabsTrigger>
+            <TabsList className="grid w-full sm:w-[400px] grid-cols-2 h-12 md:h-14 bg-white/50 backdrop-blur rounded-2xl p-1 mb-6 md:mb-8 shadow-sm">
+                <TabsTrigger value="new-test" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs md:text-sm">New Test</TabsTrigger>
+                <TabsTrigger value="history" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-bold text-xs md:text-sm">History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="new-test">
@@ -682,7 +682,7 @@ export default function ExaminerPage() {
                         className="w-full h-16 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl shadow-xl text-lg transition-all active:scale-95"
                         >
                         {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
-                        START FULL MOCK TEST
+                        START TEST
                         </Button>
                     </CardContent>
                     </Card>
@@ -734,7 +734,7 @@ export default function ExaminerPage() {
                         <p className="text-slate-500">Analyze your progress over time</p>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="divide-y overflow-x-auto">
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                     <tr>
@@ -779,6 +779,45 @@ export default function ExaminerPage() {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <div className="md:hidden divide-y divide-slate-100">
+                            {history.map((res) => (
+                                <div key={res._id} className="p-6 space-y-4 hover:bg-slate-50/50 transition-colors">
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(res.date).toLocaleDateString()}</p>
+                                            <p className="font-bold text-slate-900 text-base truncate">{res.topic}</p>
+                                        </div>
+                                        <Badge className="bg-slate-900 text-white font-black text-sm px-3 shrink-0">Band {res.score}</Badge>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {[
+                                            { l: "L", v: res.data?.moduleBands?.listening },
+                                            { l: "R", v: res.data?.moduleBands?.reading },
+                                            { l: "W", v: res.data?.moduleBands?.writing },
+                                            { l: "S", v: res.data?.moduleBands?.speaking }
+                                        ].map(m => (
+                                            <div key={m.l} className="text-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase">{m.l}</p>
+                                                <p className="font-mono text-xs font-black">{m.v || '-'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <Button 
+                                        variant="secondary" 
+                                        onClick={() => reviewResult(res)}
+                                        className="w-full rounded-xl font-bold text-xs uppercase tracking-widest h-12"
+                                    >
+                                        Deep Review
+                                    </Button>
+                                </div>
+                            ))}
+                            {history.length === 0 && (
+                                <div className="p-12 text-center text-slate-400 italic text-sm">No completed tests found in your account.</div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -924,16 +963,16 @@ export default function ExaminerPage() {
                                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-lg shadow-blue-100">2</div>
                                     <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Part 2: Individual Long Turn (Cue Card)</h4>
                                 </div>
-                                <div className="bg-slate-900 text-white p-8 rounded-[32px] border-4 border-slate-800 space-y-6 shadow-2xl relative overflow-hidden group">
+                                <div className="bg-slate-900 text-white p-6 md:p-10 rounded-[32px] border-4 border-slate-800 space-y-6 shadow-2xl relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-blue-600/20 transition-all" />
                                     <div className="relative z-10 space-y-4">
                                         <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 hover:bg-blue-600/30 uppercase text-[10px] tracking-widest font-bold">Preparation: 1 Minute</Badge>
                                         <div>
-                                            <h5 className="text-2xl font-black text-white leading-tight">{testData.speaking.part2?.topic}</h5>
+                                            <h5 className="text-xl md:text-2xl font-black text-white leading-tight">{testData.speaking.part2?.topic}</h5>
                                             <p className="text-slate-400 mt-2 text-sm italic">You should say:</p>
                                             <ul className="mt-4 space-y-3">
                                                 {(testData.speaking.part2?.bullets || testData.speaking.part2?.questions || []).map((b: any, i: number) => (
-                                                    <li key={i} className="text-base font-medium flex items-center gap-3">
+                                                    <li key={i} className="text-sm md:text-base font-medium flex items-center gap-3">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                         {typeof b === 'string' ? b : (b.question || b.text || "Instruction")}
                                                     </li>
@@ -945,13 +984,13 @@ export default function ExaminerPage() {
                                                 size="lg" 
                                                 variant={activeSpeechKey === `speaking-2` ? "destructive" : "default"}
                                                 onClick={() => activeSpeechKey === `speaking-2` ? stopRecording() : startRecording('speaking', `speaking-2`)}
-                                                className={`rounded-full h-14 px-8 font-black transition-all ${activeSpeechKey === `speaking-2` ? 'animate-pulse' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/40'}`}
+                                                className={`rounded-full h-12 md:h-14 px-8 font-black transition-all ${activeSpeechKey === `speaking-2` ? 'animate-pulse' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/40'}`}
                                             >
                                                 {activeSpeechKey === `speaking-2` ? <Square className="w-5 h-5 mr-3" /> : <Mic className="w-5 h-5 mr-3" />}
-                                                {activeSpeechKey === `speaking-2` ? "Stop Recording" : "Start Speaking (2 Min)"}
+                                                {activeSpeechKey === `speaking-2` ? "Stop" : "Start Speaking (2 Min)"}
                                             </Button>
                                             {userAnswers['speaking']?.[`speaking-2`] && (
-                                                <div className="flex-1 text-xs text-slate-400 italic bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center">
+                                                <div className="flex-1 text-[10px] md:text-xs text-slate-400 italic bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center">
                                                     "{userAnswers['speaking'][`speaking-2`].substring(0, 100)}..."
                                                 </div>
                                             )}
@@ -1022,21 +1061,21 @@ export default function ExaminerPage() {
         )}
 
         {step === 'results' && evaluation && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <Card className="border-0 shadow-2xl bg-slate-900 text-white rounded-[40px] overflow-hidden">
-                <CardHeader className="text-center p-12">
-                <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
-                <CardTitle className="text-6xl font-black text-white tracking-tight">
+          <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+            <Card className="border-0 shadow-2xl bg-slate-900 text-white rounded-[24px] md:rounded-[40px] overflow-hidden">
+                <CardHeader className="text-center p-8 md:p-12">
+                <Trophy className="w-12 h-12 md:w-20 md:h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
+                <CardTitle className="text-4xl md:text-6xl font-black text-white tracking-tight">
                     Band {evaluation.overallBand}
                 </CardTitle>
-                <p className="text-xl font-bold text-slate-400 mt-2 italic">Official Simulation Result</p>
+                <p className="text-base md:text-xl font-bold text-slate-400 mt-2 italic">Official Simulation Result</p>
                 </CardHeader>
-                <CardContent className="px-12 pb-12">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <CardContent className="px-6 md:px-12 pb-8 md:pb-12">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                     {Object.entries(evaluation.moduleBands).map(([mod, band]: any) => (
-                        <Card key={mod} className="text-center border-0 shadow-sm rounded-2xl bg-white/10 backdrop-blur-md p-6">
-                            <div className="text-3xl font-black text-white mb-1">{band}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{mod}</div>
+                        <Card key={mod} className="text-center border-0 shadow-sm rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md p-4 md:p-6">
+                            <div className="text-xl md:text-3xl font-black text-white mb-1">{band}</div>
+                            <div className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">{mod}</div>
                         </Card>
                     ))}
                 </div>
@@ -1044,12 +1083,12 @@ export default function ExaminerPage() {
             </Card>
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-14 bg-slate-100 rounded-2xl p-1 mb-8">
-                    <TabsTrigger value="overview" className="rounded-xl">Overview</TabsTrigger>
-                    <TabsTrigger value="listening" className="rounded-xl">Listening</TabsTrigger>
-                    <TabsTrigger value="reading" className="rounded-xl">Reading</TabsTrigger>
-                    <TabsTrigger value="writing" className="rounded-xl">Writing</TabsTrigger>
-                    <TabsTrigger value="speaking" className="rounded-xl">Speaking</TabsTrigger>
+                <TabsList className="flex overflow-x-auto flex-nowrap h-auto bg-slate-100 rounded-xl md:rounded-2xl p-1 mb-6 md:mb-8 scrollbar-hide min-w-full">
+                    {['overview', 'listening', 'reading', 'writing', 'speaking'].map((val) => (
+                      <TabsTrigger key={val} value={val} className="rounded-lg md:rounded-xl px-4 py-2 text-xs md:text-sm capitalize flex-shrink-0">
+                        {val}
+                      </TabsTrigger>
+                    ))}
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
@@ -1173,9 +1212,36 @@ export default function ExaminerPage() {
                                         <h4 className="text-xs font-black text-amber-600 uppercase tracking-tighter">Weaknesses</h4>
                                         <p className="text-sm text-slate-600">{evaluation.discussion?.writing?.[task]?.weaknesses}</p>
                                     </div>
-                                    <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                                    
+                                    {evaluation.discussion?.writing?.[task]?.technicalCheck?.grammarFixes?.length > 0 && (
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <h4 className="text-[10px] font-black text-red-600 uppercase tracking-widest">Grammar & Accuracy</h4>
+                                            <div className="space-y-2">
+                                                {evaluation.discussion.writing[task].technicalCheck.grammarFixes.map((fix: string, i: number) => (
+                                                    <div key={i} className="text-[11px] p-3 rounded-xl bg-red-50 border border-red-100 text-red-800 leading-relaxed italic">
+                                                        {fix}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {evaluation.discussion?.writing?.[task]?.technicalCheck?.vocabularyUpgrades?.length > 0 && (
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Vocabulary Upgrades</h4>
+                                            <div className="space-y-2">
+                                                {evaluation.discussion.writing[task].technicalCheck.vocabularyUpgrades.map((up: string, i: number) => (
+                                                    <div key={i} className="text-[11px] p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800 leading-relaxed italic">
+                                                        {up}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-auto">
                                         <h4 className="text-xs font-black text-blue-600 uppercase tracking-tighter mb-2">Examiner Suggestion</h4>
-                                        <p className="text-sm text-slate-700 font-medium">{evaluation.discussion?.writing?.[task]?.suggestedImprovement}</p>
+                                        <p className="text-sm text-slate-700 font-medium">{evaluation.discussion?.writing?.[task]?.suggestedImprovement || evaluation.discussion?.writing?.[task]?.improvement}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -1195,7 +1261,25 @@ export default function ExaminerPage() {
                                     <div key={part} className="space-y-3">
                                         <h4 className="font-bold text-blue-600 uppercase text-xs tracking-widest">{part.replace('part', 'Part ')}</h4>
                                         <div className="p-4 rounded-2xl bg-slate-50 border text-sm text-slate-600 leading-relaxed min-h-[150px]">
-                                            {evaluation.discussion?.speaking?.[part]}
+                                            <p className="mb-4">{evaluation.discussion?.speaking?.[part]?.feedback || evaluation.discussion?.speaking?.[part]}</p>
+                                            
+                                            {evaluation.discussion?.speaking?.[part]?.technicalCheck?.grammarFixes?.length > 0 && (
+                                                <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
+                                                    <p className="text-[10px] font-black text-red-600 uppercase">Grammar Fixes</p>
+                                                    {evaluation.discussion.speaking[part].technicalCheck.grammarFixes.map((fix: string, i: number) => (
+                                                        <p key={i} className="text-[11px] text-slate-500 italic">- {fix}</p>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {evaluation.discussion?.speaking?.[part]?.technicalCheck?.vocabularyUpgrades?.length > 0 && (
+                                                <div className="space-y-2 mt-4 pt-4 border-t border-slate-200">
+                                                    <p className="text-[10px] font-black text-emerald-600 uppercase">Vocab Upgrades</p>
+                                                    {evaluation.discussion.speaking[part].technicalCheck.vocabularyUpgrades.map((up: string, i: number) => (
+                                                        <p key={i} className="text-[11px] text-slate-500 italic">- {up}</p>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { 
   Headphones, 
   BookOpen, 
@@ -15,8 +16,15 @@ import {
   Star,
   BrainCircuit,
   TrendingUp,
-  Target
+  Target,
+  Sparkles,
+  Trophy,
+  MessageSquare,
+  GraduationCap,
+  Lightbulb,
+  ShieldCheck
 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,82 +45,73 @@ export default function Home() {
 
   const features = [
     { 
-      title: "Interactive Listening", 
-      desc: "Master diverse accents with 40+ dynamic mock tests and studio-quality audio.", 
-      icon: Headphones,
-      color: "text-sky-500",
-      bg: "bg-sky-500/10",
-      border: "border-sky-500/20"
+      title: "Adaptive Learning Roadmap", 
+      desc: "Start with a 5-minute diagnostic test. AI identifies your gaps and builds a skill-based roadmap just for you.", 
+      icon: Target,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      badge: "Diagnostic System"
     },
     { 
-      title: "Academic Reading", 
-      desc: "Tackle complex texts with AI-guided breakdowns and instant vocabulary support.", 
+      title: "AI-Curated Study Materials", 
+      desc: "Get blog-style lessons tailored to your hobbies and occupation. Includes interactive flashcards and quick checks.", 
       icon: BookOpen,
-      color: "text-indigo-500",
-      bg: "bg-indigo-500/10",
-      border: "border-indigo-500/20"
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+      badge: "Blog Content"
     },
     { 
-      title: "Precision Writing", 
-      desc: "Receive Band 9 evaluations powered by GPT-4o with line-by-line feedback.", 
-      icon: PenTool,
-      color: "text-fuchsia-500",
-      bg: "bg-fuchsia-500/10",
-      border: "border-fuchsia-500/20"
+      title: "Comprehensive Practice Hub", 
+      desc: "Master Listening, Reading, Writing, and Speaking with dynamic AI-generated tests and real-time feedback.", 
+      icon: TrendingUp,
+      color: "text-sky-600",
+      bg: "bg-sky-50",
+      badge: "All Modules"
     },
     { 
-      title: "Live Speaking AI", 
-      desc: "Simulate real exams with our Phi-4 powered voice examiner. 100% realistic pacing.", 
-      icon: Mic,
-      color: "text-rose-500",
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/20"
+      title: "Professional AI Examiner", 
+      desc: "Full-length simulations with official Band scoring (1.0 - 9.0) and deep analysis of your mistakes.", 
+      icon: Trophy,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      badge: "Real Exam Simulation"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden font-sans text-slate-50">
+    <div className="min-h-screen bg-slate-50/50 selection:bg-blue-600/10 selection:text-blue-600 font-sans text-slate-900">
       
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }}></div>
-        <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/10 blur-[150px] mix-blend-screen animate-pulse" style={{ animationDuration: '12s' }}></div>
-        <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[60%] rounded-full bg-sky-600/15 blur-[130px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }}></div>
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-      </div>
-
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-slate-950/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200 py-3 shadow-sm' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-500 group-hover:scale-105 group-hover:rotate-3">
-              <Globe className="w-6 h-6 text-white" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform duration-300">
+              <Trophy className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-black tracking-tight text-white flex items-center">
-              IELTS<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400 ml-1">Master</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900">
+              IELTS<span className="text-blue-600">Master</span>
             </span>
-          </div>
+          </Link>
           
-          <div className="hidden md:flex items-center gap-10 text-sm font-bold text-slate-300">
-            {["Platform", "Methodology", "Pricing", "Testimonials"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="hover:text-white transition-colors relative group">
+          <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-500">
+            {["Learning", "Practice", "Examiner", "Chat Tutor"].map((item) => (
+              <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} className="hover:text-blue-600 transition-colors relative group">
                 {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-400 to-fuchsia-400 transition-all duration-300 group-hover:w-full rounded-full"></span>
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {isLoggedIn ? (
-              <Button size="lg" asChild className="bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-full px-8 shadow-xl hover:shadow-2xl hover:shadow-white/20 transition-all duration-300 hover:-translate-y-0.5">
-                <Link href="/dashboard">Enter Dashboard <ArrowRight className="w-4 h-4 ml-2" /></Link>
+              <Button size="lg" asChild className="bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl px-6 shadow-xl transition-all duration-300">
+                <Link href="/dashboard" className="flex items-center gap-2">Dashboard <ArrowRight className="w-4 h-4" /></Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" size="lg" asChild className="font-bold text-slate-300 hover:text-white hover:bg-white/5 rounded-full">
+                <Button variant="ghost" asChild className="font-bold text-slate-500 hover:text-blue-600 rounded-2xl hidden sm:flex">
                   <Link href="/auth/login">Log In</Link>
                 </Button>
-                <Button size="lg" asChild className="bg-gradient-to-r from-indigo-500 to-fuchsia-600 hover:from-indigo-400 hover:to-fuchsia-500 text-white font-bold rounded-full px-8 shadow-lg shadow-indigo-500/25 hover:shadow-fuchsia-500/40 transition-all duration-300 border border-white/10 hover:-translate-y-0.5">
+                <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl px-6 shadow-lg shadow-blue-200 transition-all duration-300">
                   <Link href="/auth/signup">Get Started</Link>
                 </Button>
               </>
@@ -122,149 +121,186 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative pt-48 pb-32 px-6 z-10 flex flex-col items-center justify-center min-h-[90vh]">
-        <div className="max-w-5xl mx-auto text-center space-y-10">
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-indigo-300 text-xs font-bold uppercase tracking-[0.2em] backdrop-blur-md shadow-2xl hover:bg-white/10 transition-colors cursor-default">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
-            Now Powered by Multi-Model AI Orchestration
+      <header className="relative pt-48 pb-20 px-6 z-10 flex flex-col items-center justify-center min-h-[90vh]">
+        <div className="max-w-5xl mx-auto text-center space-y-12">
+          {/* HUGE IDENTITY ICON */}
+          <div className="mx-auto w-24 h-24 bg-blue-600 rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-200 animate-in zoom-in duration-1000 mb-8">
+            <Trophy className="w-12 h-12 text-white" />
+          </div>
+
+          <div className="space-y-4">
+            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-[10px] md:text-[12px] px-4 md:px-6 py-2 rounded-full text-center">
+              The All-in-One AI IELTS Examiner ⚡
+            </Badge>
+            <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-900 tracking-tighter leading-[0.9] md:leading-[0.9]">
+              IELTS<span className="text-blue-600">Master</span>
+            </h1>
+            <p className="text-lg md:text-3xl font-bold text-slate-400 tracking-tight">
+              Shatter your limits. Achieve Band 8.5+
+            </p>
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[1.05]">
-            Shatter your limits.<br />
-            Achieve <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400 animate-gradient-x">Band 8.5+</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-medium">
-            The world's most advanced IELTS preparation ecosystem. We adapt to your hobbies, occupation, and learning style to generate 100% personalized mock tests.
+          <p className="text-lg md:text-2xl text-slate-500 max-w-3xl mx-auto leading-relaxed font-medium px-4">
+            The world's first IELTS preparation ecosystem that adapts to <span className="text-slate-900 font-bold underline decoration-blue-500 underline-offset-8">YOU</span>. Personalized roadmaps and professional simulations.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
-            <Button size="lg" className="h-16 px-10 bg-white hover:bg-slate-100 text-slate-900 text-lg font-bold rounded-full shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] transition-all duration-500 hover:-translate-y-1" asChild>
-              <Link href={isLoggedIn ? "/dashboard" : "/auth/signup"} className="flex items-center gap-3">
-                {isLoggedIn ? "Resume Training" : "Start Your Journey Free"} <ArrowRight className="w-5 h-5" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 pt-6 px-4 w-full">
+            <Button size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 bg-slate-900 hover:bg-slate-800 text-white text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] shadow-2xl transition-all duration-300 hover:-translate-y-1" asChild>
+              <Link href={isLoggedIn ? "/dashboard" : "/auth/signup"} className="flex items-center justify-center gap-3">
+                {isLoggedIn ? "Resume Training" : "Start Journey"} <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="h-16 px-10 border-white/10 bg-white/5 text-white text-lg font-bold rounded-full hover:bg-white/10 backdrop-blur-md transition-all duration-300">
-              <TrendingUp className="w-5 h-5 mr-3" /> View Curriculum
+            <Button variant="outline" size="lg" className="h-16 md:h-20 w-full sm:w-auto px-10 md:px-12 border-slate-200 bg-white text-slate-600 text-lg md:text-xl font-bold rounded-[20px] md:rounded-[24px] hover:bg-slate-50 transition-all duration-300" asChild>
+              <Link href="#learning" className="flex items-center justify-center gap-2">
+                <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" /> Methodology
+              </Link>
             </Button>
           </div>
 
-          <div className="pt-16 flex items-center justify-center gap-8 text-slate-500 text-sm font-bold uppercase tracking-widest">
-            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-fuchsia-500" /> 4.9/5 User Rating</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> 10,000+ Success Stories</span>
+          <div className="pt-12 flex flex-wrap items-center justify-center gap-6 text-slate-400 text-xs font-bold uppercase tracking-widest">
+            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-500 fill-current" /> 4.9/5 Student Rating</span>
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-300"></span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Professional Examiner AI</span>
+            <span className="hidden sm:block w-1 h-1 rounded-full bg-slate-300"></span>
+            <span className="flex items-center gap-2 text-slate-900 font-black tracking-tighter">Diagnostic test included</span>
           </div>
         </div>
       </header>
 
-      {/* Persona Context Banner */}
-      <section className="relative z-10 py-12 border-y border-white/5 bg-slate-900/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex-1 space-y-2">
-            <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-              <BrainCircuit className="w-6 h-6 text-indigo-400" /> Hyper-Personalized Learning
-            </h3>
-            <p className="text-slate-400 font-medium">Are you an Engineer who loves Photography? We tailor your Reading passages and Speaking questions specifically to your background.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 shadow-inner">
-              <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Your Occupation</p>
-              <p className="text-white font-semibold">Software Developer</p>
+      {/* Daily Vibe Check Preview */}
+      <section className="relative z-10 py-16 px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-[40px] border border-slate-200 shadow-2xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+            
+            <div className="flex-1 space-y-6 relative z-10">
+              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-100 font-black uppercase tracking-widest text-[10px] px-3 py-1">
+                English Vibe Check ⚡
+              </Badge>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                Get Daily Insights In Your Language.
+              </h2>
+              <p className="text-slate-500 text-lg font-medium leading-relaxed">
+                Start every day with AI-generated vocabulary and grammar tips using modern "Native Mode" translations. From Indonesian slang to Academic English, we keep it relatable.
+              </p>
+              <div className="flex gap-4">
+                <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-500">
+                  Indonesian Support
+                </div>
+                <div className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-500">
+                  Gen Z Logic
+                </div>
+              </div>
             </div>
-            <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 shadow-inner hidden sm:block">
-              <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-1">Your Target</p>
-              <p className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-rose-400 font-black text-xl leading-none">Band 8.0</p>
+
+            <div className="flex-1 w-full relative z-10">
+              <Card className="border-slate-200 shadow-xl rounded-3xl overflow-hidden bg-white rotate-3 hover:rotate-0 transition-transform duration-500">
+                <CardHeader className="bg-slate-900 text-white p-6">
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-70">
+                    <Zap className="w-3 h-3 fill-current" /> Tip of the day
+                  </div>
+                  <CardTitle className="text-lg font-bold mt-2 italic text-blue-300">"Hit the books"</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <p className="text-sm font-bold text-slate-900 leading-relaxed">
+                    Means "to study very hard." Use this in Speaking Part 1 to sound more like a native!
+                  </p>
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-[11px] font-bold text-blue-700 italic">
+                    "Gaskeun belajar" - Tapi lebih profesional untuk IELTS.
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Bento Grid Features */}
-      <section id="platform" className="py-32 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto space-y-16">
+      {/* Main Features Grid */}
+      <section id="learning" className="py-24 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-20">
           <div className="text-center space-y-4">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Four Pillars of Mastery.</h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">Our AI engines meticulously analyze every aspect of your performance against official IELTS Band Descriptors.</p>
+            <div className="text-blue-600 font-bold uppercase tracking-[0.2em] text-xs">Four Pillars of Mastery</div>
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight">Everything you need<br />to hit Band 8.5.</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium leading-relaxed">Our AI engines meticulously analyze every aspect of your performance against official IELTS Band Descriptors.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-8">
             {features.map((f, i) => (
-              <div key={i} className={`group p-10 bg-slate-900/40 border ${f.border} rounded-[32px] backdrop-blur-md hover:bg-slate-900/80 transition-all duration-500 hover:-translate-y-2 overflow-hidden relative`}>
-                <div className={`absolute top-0 right-0 w-64 h-64 ${f.bg} rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700 opacity-50`}></div>
+              <Card key={i} className="group p-10 border-slate-200 rounded-[40px] shadow-none bg-white hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-50 transition-all duration-500 hover:-translate-y-2 overflow-hidden relative">
+                <div className={`absolute top-0 right-0 w-48 h-48 ${f.bg} rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700`}></div>
                 
-                <div className={`relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8 ${f.bg} border ${f.border}`}>
-                  <f.icon className={`w-8 h-8 ${f.color}`} />
-                </div>
-                <h3 className="relative z-10 text-2xl font-bold text-white mb-4">{f.title}</h3>
-                <p className="relative z-10 text-slate-400 text-base leading-relaxed mb-8">{f.desc}</p>
+                <CardHeader className="p-0 mb-8 relative z-10">
+                  <div className="flex justify-between items-start">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 ${f.bg} border border-slate-100 shadow-inner shadow-white/50`}>
+                      <f.icon className={`w-8 h-8 ${f.color}`} />
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-slate-200 px-3 py-1">
+                      {f.badge}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-3xl font-black text-slate-900 mb-4">{f.title}</CardTitle>
+                  <CardDescription className="text-slate-500 text-lg font-medium leading-relaxed">
+                    {f.desc}
+                  </CardDescription>
+                </CardHeader>
                 
-                <div className="relative z-10 flex items-center gap-2 text-sm font-bold text-slate-500 group-hover:text-white transition-colors uppercase tracking-widest cursor-pointer">
-                  Explore Engine <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-2 ${f.color}`} />
-                </div>
-              </div>
+                <CardFooter className="p-0 relative z-10 flex items-center gap-3 text-[12px] font-black text-slate-400 group-hover:text-blue-600 transition-colors uppercase tracking-[0.2em]">
+                  Explore Architecture <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-2" />
+                </CardFooter>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Stats/Proof Section */}
-      <section className="py-32 px-6 relative z-10 border-t border-white/5">
+      {/* Chat Tutor Integration */}
+      <section id="chat-tutor" className="py-24 px-6 bg-slate-900 text-white relative z-10 overflow-hidden">
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
-          <div className="flex-1 space-y-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold uppercase tracking-wider">
-              <Target className="w-3 h-3" /> Proven Results
+          <div className="flex-1 space-y-8 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider">
+              <MessageSquare className="w-3 h-3" /> Context-Aware Tutor
             </div>
-            <h2 className="text-4xl md:text-6xl font-black text-white leading-[1.1] tracking-tight">
-              Stop guessing.<br />Start <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400">Knowing.</span>
+            <h2 className="text-4xl md:text-6xl font-black text-white leading-[1.05] tracking-tight">
+              A Personal Tutor<br />that actually <span className="text-blue-500">Knows You.</span>
             </h2>
-            <div className="space-y-6">
+            <p className="text-slate-400 text-lg leading-relaxed font-medium">
+              Stuck on a Reading passage? Confused by a Grammar rule? Our AI Chat Tutor receives the exact context of what you're studying, so it's always ready with the right answer.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { title: "Mistral Large", desc: "Crafts complex, university-level reading passages and dynamic listening scripts." },
-                { title: "GPT-4o (High)", desc: "Acts as a Senior Examiner, grading your essays exactly like a human would." },
-                { title: "Phi-4 Mini", desc: "Powers our low-latency, real-time conversational speaking agent." }
+                { icon: Sparkles, title: "No Explanation Needed", desc: "Tutor knows exactly which question you're solving." },
+                { icon: ShieldCheck, title: "Band 9 Verified", desc: "Expert logic based on official examiner guidelines." }
               ].map((item, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="mt-1 w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-bold text-lg">{item.title}</h4>
-                    <p className="text-slate-400 leading-relaxed mt-1">{item.desc}</p>
-                  </div>
+                <div key={i} className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-3">
+                  <item.icon className="w-6 h-6 text-blue-500" />
+                  <h4 className="font-bold text-white">{item.title}</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
           
-          <div className="flex-1 w-full">
-            <div className="bg-slate-900 rounded-[40px] p-12 border border-white/10 relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-indigo-500/10 via-transparent to-rose-500/10 pointer-events-none"></div>
-              
-              <div className="space-y-10 relative z-10">
-                <div>
-                  <p className="text-slate-400 uppercase tracking-widest text-xs font-bold mb-2">Average Score Increase</p>
-                  <p className="text-7xl font-black text-white tracking-tighter">+1.5 <span className="text-3xl text-slate-500 font-bold">Bands</span></p>
+          <div className="flex-1 w-full relative z-10">
+            <div className="bg-slate-800 rounded-[40px] p-8 border border-white/10 shadow-2xl relative">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
                 </div>
-                <div className="h-px w-full bg-gradient-to-r from-white/20 to-transparent"></div>
                 <div>
-                  <p className="text-slate-400 uppercase tracking-widest text-xs font-bold mb-2">Tests Evaluated by AI</p>
-                  <p className="text-5xl font-black text-white tracking-tight">1.2M+</p>
+                  <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">IELTS AI Tutor</div>
+                  <div className="text-white font-bold text-sm">Online for assistance</div>
                 </div>
-                <div className="h-px w-full bg-gradient-to-r from-white/20 to-transparent"></div>
-                <div className="flex items-center gap-4">
-                  <div className="flex -space-x-3">
-                    {[1,2,3,4].map(i => (
-                      <div key={i} className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">
-                        {`U${i}`}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-sm font-medium text-slate-400 max-w-[200px] leading-tight">
-                    Join thousands of students who achieved their dreams.
-                  </p>
+              </div>
+              <div className="space-y-4">
+                <div className="bg-slate-700/50 p-4 rounded-2xl rounded-tl-none mr-12 text-sm text-slate-300">
+                  "I see you're reading about 'Environmental Vocabulary'. Would you like to see 5 high-scoring collocations for this topic?"
+                </div>
+                <div className="bg-blue-600 p-4 rounded-2xl rounded-tr-none ml-12 text-sm text-white font-medium">
+                  "Yes, please! Especially ones for Writing Task 2."
+                </div>
+                <div className="bg-slate-700/50 p-4 rounded-2xl rounded-tl-none mr-12 text-sm text-slate-300">
+                  "Got it. Use 'Mitigating circumstances' or 'Irreversible damage' to show a high lexical resource level!"
                 </div>
               </div>
             </div>
@@ -274,34 +310,38 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="py-32 px-6 relative z-10 text-center">
-        <div className="max-w-4xl mx-auto bg-gradient-to-b from-indigo-900/50 to-slate-900 border border-indigo-500/20 rounded-[48px] p-16 relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/30 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="max-w-5xl mx-auto bg-white border border-slate-200 rounded-[64px] p-16 md:p-24 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-100/50 blur-[120px] rounded-full pointer-events-none"></div>
           
-          <h2 className="relative z-10 text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">Ready to ace your test?</h2>
-          <p className="relative z-10 text-xl text-indigo-200 mb-10 max-w-2xl mx-auto">Create your free account today. Tell us your goals, and let our AI craft your perfect preparation journey.</p>
+          <h2 className="relative z-10 text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tight">Ready to break<br />your limits?</h2>
+          <p className="relative z-10 text-xl md:text-2xl text-slate-500 mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
+            Create your personalized preparation journey today. Join thousands of students who have already boosted their scores by +1.5 bands using our Adaptive AI.
+          </p>
           
-          <Button size="lg" className="relative z-10 h-16 px-12 bg-white hover:bg-indigo-50 text-indigo-950 text-xl font-bold rounded-full shadow-2xl hover:-translate-y-1 transition-all duration-300" asChild>
+          <Button size="lg" className="relative z-10 h-20 px-16 bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold rounded-[32px] shadow-2xl shadow-blue-200 hover:-translate-y-1 transition-all duration-300" asChild>
             <Link href={isLoggedIn ? "/dashboard" : "/auth/signup"}>
-              {isLoggedIn ? "Enter Dashboard" : "Start For Free"}
+              {isLoggedIn ? "Resume Learning" : "Start For Free"}
             </Link>
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/10 bg-slate-950 relative z-10">
+      <footer className="py-12 border-t border-slate-200 bg-white relative z-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity">
-            <Globe className="w-5 h-5 text-white" />
-            <span className="font-bold text-white tracking-tight">IELTS Master</span>
+          <div className="flex items-center gap-3 opacity-80 hover:opacity-100 transition-opacity">
+             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-white" />
+              </div>
+            <span className="font-bold text-slate-900 tracking-tight text-xl">IELTS<span className="text-blue-600">Master</span></span>
           </div>
-          <p className="text-sm text-slate-500 font-medium">
-            © 2026 IELTS Master. Crafted with Multi-Model AI.
+          <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">
+            © 2026 IELTS Master. Built with Adaptive AI.
           </p>
-          <div className="flex items-center gap-8 text-slate-500 text-sm font-medium">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+          <div className="flex items-center gap-8 text-slate-500 text-xs font-bold uppercase tracking-widest">
+            <a href="#" className="hover:text-blue-600 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">Terms</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">Contact</a>
           </div>
         </div>
       </footer>

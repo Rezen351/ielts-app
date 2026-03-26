@@ -55,7 +55,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         : 'bg-slate-50 shadow-sm border-slate-200'
     }`}>
       <div className="flex justify-between items-start gap-4">
-          <p className="font-bold text-slate-900 leading-relaxed text-lg">
+          <p className="font-bold text-slate-900 leading-relaxed text-base md:text-lg">
             {displayQuestion}
           </p>
           {isReviewMode && discussion && (
@@ -70,7 +70,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           {question.options.map((opt: string, i: number) => (
             <label
               key={i}
-              className={`flex items-center gap-3 p-4 border rounded-xl text-sm transition-all cursor-pointer ${
+              className={`flex items-center gap-3 p-3 md:p-4 border rounded-xl text-xs md:text-sm transition-all cursor-pointer ${
                 isReviewMode && (discussion?.correctAnswer === opt || discussion?.correctAnswer?.includes(opt))
                     ? 'bg-emerald-100 border-emerald-500 font-bold' 
                     : (isReviewMode && userAnswer === opt && !discussion?.isCorrect ? 'bg-red-100 border-red-500' : 'bg-white hover:border-blue-300 shadow-sm')
@@ -83,7 +83,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 value={opt}
                 checked={userAnswer === opt}
                 onChange={(e) => onUpdateAnswer(module, qId, e.target.value)}
-                className="w-5 h-5 text-blue-600 cursor-pointer"
+                className="w-4 h-4 md:w-5 md:h-5 text-blue-600 cursor-pointer"
               />
               <span className="flex-1 text-slate-700">{opt}</span>
             </label>
@@ -104,7 +104,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   placeholder={gapCount > 1 ? `Type answer for (${idx + 1})...` : "Type your answer here..."}
                   value={answers[idx] || ''}
                   onChange={(e) => handleMultiAnswerUpdate(idx, e.target.value)}
-                  className={`bg-white h-12 text-lg border-2 focus:ring-2 transition-all shadow-sm ${
+                  className={`bg-white h-10 md:h-12 text-sm md:text-lg border-2 focus:ring-2 transition-all shadow-sm ${
                     isReviewMode 
                       ? (discussion?.isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-red-500 bg-red-50 text-red-700') 
                       : 'border-slate-200 focus:border-blue-500 text-slate-900'

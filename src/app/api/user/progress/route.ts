@@ -14,9 +14,13 @@ export async function GET(request: Request) {
 
     await dbConnect();
 
-    // 1. Fetch recent results (tanpa sort sementara untuk menghindari error indeks Cosmos DB)
+    // 1. Fetch recent results sorted by date
     const recentActivities = await TestResult.find({ userId })
+      .sort({ date: -1 })
       .limit(5);
+
+    // Get the very latest session to allow 'Resume'
+    const latestSession = recentActivities.length > 0 ? recentActivities[0] : null;
 
     // 2. Aggregate average scores by module
     const stats = await TestResult.aggregate([
@@ -49,6 +53,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ 
       success: true, 
       recentActivities, 
+      latestSession,
       stats,
       recommendation,
       totalOverallTests: stats.reduce((acc, curr) => acc + curr.totalTests, 0)

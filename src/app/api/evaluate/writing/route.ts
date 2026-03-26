@@ -52,19 +52,25 @@ export async function POST(request: Request) {
     CRITERIA TO EVALUATE:
     ${criteriaDescription}
     
+    TECHNICAL FOCUS:
+    - Grammar (GRA): Identify specific errors and provide corrected versions.
+    - Vocabulary (LR): Suggest advanced (Band 7.0+) synonyms for common words used.
+    - Usage: Provide clear examples for corrected sentence structures.
+
     REQUIRED OUTPUT JSON FORMAT:
     {
-      "overallScore": number, (Calculated as the average of the 4 criteria, rounded to the nearest half-band)
+      "overallScore": number,
       "criteriaScores": {
         "TA_or_TR_or_FC": { "score": number, "justification": "..." },
         "CC": { "score": number, "justification": "..." },
         "LR": { "score": number, "justification": "..." },
         "GRA": { "score": number, "justification": "..." },
-        "P": { "score": number, "justification": "..." } (Only for Speaking)
+        "P": { "score": number, "justification": "..." }
       },
-      "feedback": "A detailed overall assessment of the response.",
-      "suggestions": ["Specific, actionable advice for improvement 1", "Advice 2", "..."],
-      "errors": ["Specific grammatical or lexical errors found", "..."]
+      "feedback": "Overall summary focused on strengths and technical weaknesses.",
+      "suggestions": ["Actionable technical advice for improvement"],
+      "errors": ["Format: 'Current: [error] -> Better: [correction] (Reason: [rule])'"],
+      "vocabularyUpgrades": ["Format: 'Word: [common] -> Upgrade: [advanced] (Usage example: [sentence])'"]
     }`;
 
     const userPrompt = `Task Type: ${taskType}\nPrompt: ${prompt}\n\nResponse:\n${essay}`;

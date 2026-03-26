@@ -282,7 +282,7 @@ export default function ReadingPage() {
           </Card>
           
           <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent">
-            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Dashboard</Link>
+            <Link href="/dashboard/practice" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Practice Hub</Link>
           </Button>
         </div>
       </div>
@@ -309,7 +309,6 @@ export default function ReadingPage() {
           </Button>
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-600" />
-            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Reading Practice</h1>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -317,7 +316,7 @@ export default function ReadingPage() {
             <Clock className="w-4 h-4" />
             {formatTime(timeLeft)}
           </div>
-          <Button onClick={handleSubmit} disabled={submitted} className="bg-blue-600 hover:bg-blue-700 rounded-full font-bold px-6">
+          <Button onClick={handleSubmit} disabled={submitted} className="bg-blue-600 hover:bg-blue-700 rounded-full font-bold px-4 md:px-6 text-xs md:text-sm h-10 md:h-11">
             Submit Test
           </Button>
         </div>
@@ -326,13 +325,13 @@ export default function ReadingPage() {
       <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8">
         <div className="lg:w-1/2 space-y-6">
           <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden h-fit sticky top-24 bg-white">
-            <CardHeader className="p-10 pb-4">
-              <Badge variant="outline" className="mb-4 border-slate-200 text-slate-400 font-bold tracking-widest text-[10px]">DYNAMIC PASSAGE: {topic.toUpperCase()}</Badge>
-              <CardTitle className="text-3xl font-black text-slate-900 leading-tight">
+            <CardHeader className="p-6 md:p-10 pb-4">
+              <Badge variant="outline" className="mb-4 border-slate-200 text-slate-400 font-bold tracking-widest text-[10px] whitespace-normal h-auto py-1.5 px-3 block w-fit">DYNAMIC PASSAGE: {topic.toUpperCase()}</Badge>
+              <CardTitle className="text-xl md:text-3xl font-black text-slate-900 leading-tight break-words">
                 {data?.title}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-10 pt-4 text-slate-600 leading-relaxed text-lg font-medium space-y-6">
+            <CardContent className="p-6 md:p-10 pt-4 text-slate-600 leading-relaxed text-base md:text-lg font-medium space-y-6">
               {data?.passage.split('\n\n').map((p: string, i: number) => (
                 <p key={i}>{p}</p>
               ))}
@@ -391,7 +390,7 @@ export default function ReadingPage() {
               <div className="text-6xl font-black text-blue-500 mb-8">{score} / {data.questions.length}</div>
               <div className="flex gap-4 justify-center">
                 <Button variant="secondary" className="rounded-full font-bold px-8 bg-white text-slate-900 hover:bg-slate-100" asChild>
-                  <Link href="/dashboard">Return to Dashboard</Link>
+                  <Link href="/dashboard/practice">Practice Hub</Link>
                 </Button>
                 <Button variant="outline" onClick={() => setIsSelecting(true)} className="rounded-full font-bold px-8 border-white/20 text-white hover:bg-white/10">
                   Try New Topic

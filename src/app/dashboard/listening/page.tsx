@@ -472,7 +472,7 @@ export default function ListeningPage() {
           </Card>
           
           <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent">
-            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Dashboard</Link>
+            <Link href="/dashboard/practice" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Practice Hub</Link>
           </Button>
         </div>
       </div>
@@ -499,7 +499,6 @@ export default function ListeningPage() {
           </Button>
           <div className="flex items-center gap-2">
             <Headphones className="w-5 h-5 text-blue-500" />
-            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Listening Practice</h1>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -515,25 +514,27 @@ export default function ListeningPage() {
 
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full space-y-8">
         <audio ref={audioRef} className="hidden" />
-        <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[40px] overflow-hidden bg-slate-900 text-white p-10 relative">
-          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="w-24 h-24 bg-blue-600 rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-500/40 relative">
-              <Volume2 className="w-10 h-10 text-white" />
-              {isPlaying && <div className="absolute -inset-2 border-2 border-blue-400 rounded-[36px] animate-ping opacity-25"></div>}
+        <Card className="border-slate-200 shadow-2xl shadow-slate-200/50 rounded-[32px] md:rounded-[40px] overflow-hidden bg-slate-900 text-white p-6 md:p-10 relative">
+          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 relative z-10 w-full">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-600 rounded-[24px] md:rounded-[32px] flex items-center justify-center shadow-2xl shadow-blue-500/40 relative shrink-0">
+              <Volume2 className="w-8 h-8 md:w-10 md:h-10 text-white" />
+              {isPlaying && <div className="absolute -inset-2 border-2 border-blue-400 rounded-[28px] md:rounded-[36px] animate-ping opacity-25"></div>}
             </div>
-            <div className="flex-1 text-center md:text-left space-y-3">
-              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold">TOPIC: {topic.toUpperCase()}</Badge>
-              <h2 className="text-2xl font-bold">Social & Academic Conversation</h2>
-              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+            <div className="flex-1 text-center md:text-left space-y-3 min-w-0 w-full">
+              <Badge className="bg-blue-500/20 text-blue-400 border-0 uppercase tracking-widest text-[10px] font-bold whitespace-normal h-auto py-1.5 px-4 text-center md:text-left inline-block">
+                TOPIC: {topic.toUpperCase()}
+              </Badge>
+              <h2 className="text-xl md:text-2xl font-bold break-words leading-tight">Social & Academic Conversation</h2>
+              <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed max-w-md mx-auto md:mx-0">
                 Listen to the recording and answer the questions.
               </p>
             </div>
             <Button 
               size="lg" 
               onClick={handlePlayAudio}
-              className={`h-20 w-20 rounded-full shadow-2xl transition-all active:scale-95 ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
+              className={`h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl transition-all active:scale-95 shrink-0 ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-white text-slate-900 hover:bg-slate-100'}`}
             >
-              {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
+              {isPlaying ? <Pause className="w-6 h-6 md:w-8 md:h-8 fill-current" /> : <Play className="w-6 h-6 md:w-8 md:h-8 fill-current ml-1" />}
             </Button>
           </div>
         </Card>
@@ -586,7 +587,7 @@ export default function ListeningPage() {
               <div className="text-6xl font-black mb-8">{(score/data.questions.length * 9).toFixed(1)} <span className="text-xl opacity-50">Band</span></div>
               <div className="flex gap-4 justify-center">
                 <Button variant="secondary" className="rounded-full font-bold px-10 h-12 bg-white text-slate-900" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href="/dashboard/practice">Practice Hub</Link>
                 </Button>
                 <Button variant="outline" onClick={() => setIsSelecting(true)} className="rounded-full font-bold px-10 h-12 border-white/20 text-white hover:bg-white/10">
                   Try New Topic

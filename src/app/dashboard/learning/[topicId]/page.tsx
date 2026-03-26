@@ -27,6 +27,7 @@ export default function MaterialPage() {
   
   const [material, setMaterial] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [completing, setCompleting] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<any>({});
   const [showQuizFeedback, setShowQuizFeedback] = useState<any>({});
   const [flippedCards, setFlippedCards] = useState<any>({});
@@ -58,6 +59,35 @@ export default function MaterialPage() {
     setFlippedCards({ ...flippedCards, [idx]: !flippedCards[idx] });
   };
 
+  const handleComplete = async () => {
+    const savedUser = localStorage.getItem('user');
+    if (!savedUser) return;
+    const user = JSON.parse(savedUser);
+
+    setCompleting(true);
+    try {
+      const res = await fetch('/api/user/insights/roadmap/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          topicId: topicId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Topic completed!", { description: "Next topic unlocked." });
+        router.back();
+      } else {
+        toast.error("Failed to update progress");
+      }
+    } catch (err) {
+      toast.error("Network error");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   if (loading) return <div className="p-20 text-center font-bold text-slate-400">AI is curating your material...</div>;
   if (!material) return <div className="p-20 text-center text-red-500">Material not found.</div>;
 
@@ -73,17 +103,18 @@ export default function MaterialPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-12 max-w-4xl mx-auto w-full space-y-16 pb-32">
+      <main className="flex-1 p-4 md:p-12 max-w-4xl mx-auto w-full space-y-12 md:space-y-16 pb-32">
         {/* Article Body */}
-        <div className="space-y-12">
+        <div className="space-y-10 md:space-y-12">
           {material.content.sections.map((section: any, idx: number) => (
-            <section key={idx} className="space-y-6">
-              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{section.heading}</h2>
-              <div className="prose prose-slate max-w-none text-slate-600 text-lg leading-relaxed space-y-4 
+            <section key={idx} className="space-y-4 md:space-y-6">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{section.heading}</h2>
+              <div className="prose prose-slate max-w-none text-slate-600 text-base md:text-lg leading-relaxed space-y-4 
                 prose-headings:text-slate-900 prose-strong:text-slate-900 prose-strong:font-bold
                 prose-table:border prose-table:rounded-xl prose-table:overflow-hidden prose-table:shadow-sm
-                prose-th:bg-slate-50 prose-th:p-4 prose-th:text-xs prose-th:font-bold prose-th:uppercase prose-th:tracking-widest prose-th:text-slate-500
-                prose-td:p-4 prose-td:border-t prose-td:border-slate-100 prose-td:text-sm">
+                prose-th:bg-slate-50 prose-th:p-3 md:prose-th:p-4 prose-th:text-[10px] md:prose-th:text-xs prose-th:font-bold prose-th:uppercase prose-th:tracking-widest prose-th:text-slate-500
+                prose-td:p-3 md:prose-td:p-4 prose-td:border-t prose-td:border-slate-100 prose-td:text-xs md:prose-td:text-sm
+                overflow-x-auto block w-full scrollbar-thin">
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]} 
                   rehypePlugins={[rehypeRaw]}
@@ -93,13 +124,13 @@ export default function MaterialPage() {
               </div>
               
               {section.miniExplainer && (
-                <div className="bg-blue-50/50 border-l-4 border-blue-500 p-6 rounded-r-2xl flex gap-4 items-start my-8">
-                  <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Lightbulb className="w-5 h-5 text-white" />
+                <div className="bg-blue-50/50 border-l-4 border-blue-500 p-4 md:p-6 rounded-r-2xl flex gap-3 md:gap-4 items-start my-6 md:my-8">
+                  <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Lightbulb className="w-4 h-4 md:w-5 md:h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">AI Mini-Explainer</div>
-                    <div className="text-blue-900 font-medium italic leading-relaxed prose prose-sm prose-blue max-w-none">
+                    <div className="text-[10px] md:text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">AI Mini-Explainer</div>
+                    <div className="text-blue-900 font-medium italic leading-relaxed prose prose-sm prose-blue max-w-none text-xs md:text-sm">
                       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {section.miniExplainer}
                       </ReactMarkdown>
@@ -201,10 +232,11 @@ export default function MaterialPage() {
         <div className="flex justify-center pt-20">
           <Button 
             variant="outline"
-            onClick={() => router.back()}
+            onClick={handleComplete}
+            disabled={completing}
             className="border-slate-200 hover:bg-slate-100 rounded-2xl h-14 px-12 font-bold text-lg flex gap-2"
           >
-            <CheckCircle2 className="w-5 h-5 text-green-500" /> Mark as Completed
+            {completing ? "Updating..." : <><CheckCircle2 className="w-5 h-5 text-green-500" /> Mark as Completed</>}
           </Button>
         </div>
       </main>

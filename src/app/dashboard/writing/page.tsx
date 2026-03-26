@@ -281,7 +281,7 @@ export default function WritingPage() {
           </Card>
           
           <Button variant="ghost" asChild className="mx-auto block w-fit text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-transparent">
-            <Link href="/dashboard" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Dashboard</Link>
+            <Link href="/dashboard/practice" className="flex items-center gap-2"><ArrowLeft className="w-3 h-3 md:w-4 md:h-4" /> Back to Practice Hub</Link>
           </Button>
         </div>
       </div>
@@ -306,7 +306,6 @@ export default function WritingPage() {
           </Button>
           <div className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-blue-600" />
-            <h1 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Writing Module</h1>
           </div>
         </div>
       </header>
@@ -314,34 +313,34 @@ export default function WritingPage() {
       <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto w-full space-y-8">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-slate-200 shadow-none rounded-3xl overflow-hidden bg-white">
-              <CardHeader className="bg-slate-50/30 border-b border-slate-100 p-8">
+            <Card className="border-slate-200 shadow-none rounded-[24px] md:rounded-3xl overflow-hidden bg-white">
+              <CardHeader className="bg-slate-50/30 border-b border-slate-100 p-6 md:p-8">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-blue-50 text-blue-600 border-blue-100 uppercase text-[10px]">TASK 2: {topic.toUpperCase()}</Badge>
+                  <Badge className="bg-blue-50 text-blue-600 border-blue-100 uppercase text-[9px] md:text-[10px] whitespace-normal h-auto py-1 px-3">TASK 2: {topic.toUpperCase()}</Badge>
                 </div>
-                <CardTitle className="text-lg font-bold leading-relaxed text-slate-800">
+                <CardTitle className="text-base md:text-lg font-bold leading-relaxed text-slate-800 break-words">
                   {promptData?.prompt}
                 </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400 mt-2">
+                <CardDescription className="text-[10px] md:text-xs font-medium text-slate-400 mt-2">
                   {promptData?.instructions}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Textarea 
                   placeholder="Type your essay here..."
-                  className="min-h-[400px] border-0 focus-visible:ring-0 text-slate-700 leading-relaxed p-8 rounded-none resize-none text-base"
+                  className="min-h-[300px] md:min-h-[400px] border-0 focus-visible:ring-0 text-slate-700 leading-relaxed p-6 md:p-8 rounded-none resize-none text-sm md:text-base"
                   value={essay}
                   onChange={(e) => setEssay(e.target.value)}
                 />
               </CardContent>
-              <CardFooter className="bg-slate-50/30 border-t border-slate-100 p-6 flex justify-between items-center">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <CardFooter className="bg-slate-50/30 border-t border-slate-100 p-4 md:p-6 flex justify-between items-center gap-4">
+                <div className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
                   Words: <span className="text-slate-900">{essay ? essay.trim().split(/\s+/).length : 0}</span>
                 </div>
                 <Button 
                   onClick={handleEvaluate} 
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 font-bold h-12 shadow-lg shadow-blue-200"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 md:px-8 font-bold h-10 md:h-12 shadow-lg shadow-blue-200 text-xs md:text-sm"
                 >
                   {loading ? "Analyzing..." : "Evaluate Essay"}
                 </Button>
@@ -387,10 +386,39 @@ export default function WritingPage() {
                         ))}
                       </div>
                     </div>
+
+                    {analysis.errors && analysis.errors.length > 0 && (
+                      <div className="space-y-4 border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grammar & Accuracy</p>
+                        <div className="space-y-2">
+                          {analysis.errors.map((err: string, i: number) => (
+                            <div key={i} className="p-3 rounded-xl bg-red-50 border border-red-100 text-xs font-medium text-red-800 leading-relaxed">
+                              {err}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {analysis.vocabularyUpgrades && analysis.vocabularyUpgrades.length > 0 && (
+                      <div className="space-y-4 border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Vocabulary Upgrades</p>
+                        <div className="space-y-2">
+                          {analysis.vocabularyUpgrades.map((vocab: string, i: number) => (
+                            <div key={i} className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-800 leading-relaxed">
+                              {vocab}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 <Button variant="outline" onClick={() => setIsSelecting(true)} className="w-full rounded-xl py-6 border-slate-200 text-slate-600 font-bold">
                   Try New Prompt
+                </Button>
+                <Button variant="ghost" asChild className="w-full text-slate-400 font-bold text-xs uppercase tracking-widest">
+                  <Link href="/dashboard/practice">Return to Practice Hub</Link>
                 </Button>
 
                 {promptData?.sampleAnswer && (
