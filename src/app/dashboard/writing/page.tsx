@@ -42,12 +42,71 @@ export default function WritingPage() {
   const [recentPage, setRecentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // AI Assistant States
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantData, setAssistantData] = useState<any>(null);
+  const [lastAnalyzedSentence, setLastAnalyzedSentence] = useState('');
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
     fetchRecommendations();
     fetchRecentPractices();
   }, []);
+
+  // Debounced AI Assistant
+  useEffect(() => {
+    if (!essay || !promptData?.prompt || isSelecting) return;
+
+    const sentences = essay.trim().split(/[.!?]+/);
+    const lastSentence = sentences[sentences.length - 1]?.trim();
+
+    if (!lastSentence || lastSentence.split(' ').length < 5 || lastSentence === lastAnalyzedSentence) return;
+
+    const timer = setTimeout(() => {
+      handleGetAssistant(lastSentence);
+    }, 2500); // 2.5s debounce
+
+    return () => clearTimeout(timer);
+  }, [essay]);
+
+  const handleGetAssistant = async (lastSentence: string) => {
+    setAssistantLoading(true);
+    try {
+      const response = await fetch('/api/chat/writing-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          essay,
+          prompt: promptData.prompt,
+          lastSentence
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAssistantData(data.assistant);
+        setLastAnalyzedSentence(lastSentence);
+      }
+    } catch (err) {
+      console.error("Assistant failed");
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
+  const applyImprovement = () => {
+    if (!assistantData?.improvement) return;
+    const sentences = essay.trim().split(/[.!?]+/);
+    sentences[sentences.length - 1] = " " + assistantData.improvement;
+    setEssay(sentences.join('.').trim() + " ");
+    setAssistantData(null);
+  };
+
+  const applyNextStep = () => {
+    if (!assistantData?.nextStep) return;
+    setEssay(essay.trim() + " " + assistantData.nextStep + " ");
+    setAssistantData(null);
+  };
 
   const fetchRecentPractices = async () => {
     try {
@@ -349,6 +408,81 @@ export default function WritingPage() {
           </div>
 
           <div className="space-y-6">
+            {/* AI Assistant / Copilot Panel */}
+            <Card className="border-none shadow-xl shadow-indigo-100/50 rounded-3xl overflow-hidden bg-gradient-to-br from-indigo-50 to-white border-t-4 border-t-indigo-600">
+              <CardHeader className="p-6 md:p-8 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge className="bg-indigo-600 text-white border-none uppercase text-[8px] md:text-[9px] font-black tracking-widest px-3">
+                    AI Writing Copilot
+                  </Badge>
+                  {assistantLoading && <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />}
+                </div>
+                <CardTitle className="text-sm md:text-base font-black text-indigo-900">
+                  Real-time Assistance
+                </CardTitle>
+                <CardDescription className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">
+                  Keep writing to see suggestions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 md:p-8 pt-0 space-y-6">
+                {assistantData ? (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                        <Sparkles className="w-3.5 h-3.5" /> Sentence Improvement
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-2xl border border-indigo-100 shadow-sm">
+                        <p className="text-sm font-medium text-slate-700 italic leading-relaxed">
+                          "{assistantData.improvement}"
+                        </p>
+                        <div className="mt-3 flex items-center justify-between">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase">{assistantData.explanation}</span>
+                           <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={applyImprovement}
+                              className="h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 font-bold text-[10px] uppercase"
+                           >
+                              Apply
+                           </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 border-t border-indigo-100/50 pt-6">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                        <TrendingUp className="w-3.5 h-3.5" /> Logical Next Step
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-2xl border border-indigo-100 shadow-sm">
+                        <p className="text-sm font-medium text-slate-700 leading-relaxed">
+                          "{assistantData.nextStep}"
+                        </p>
+                        <div className="mt-3 flex justify-end">
+                           <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={applyNextStep}
+                              className="h-7 rounded-lg text-indigo-600 hover:bg-indigo-50 font-bold text-[10px] uppercase"
+                           >
+                              Continue with this
+                           </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                    <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                      <Sparkles className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <p className="text-xs font-medium text-slate-400 max-w-[180px]">
+                      {assistantLoading ? "Analyzing your writing style..." : "Write a complete sentence (min 5 words) to get AI suggestions."}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {analysis && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Card className="border-slate-200 shadow-xl shadow-blue-50/50 rounded-3xl overflow-hidden border-t-4 border-t-blue-600 bg-white">
