@@ -1,5 +1,15 @@
+# Milestone Assessment & Adaptive Branching
+Progress: 4/4 ✅ **COMPLETE!**
+
+## Implemented:
+- [✅] 1. **Milestone Gatekeeper:** Adaptive assessment between roadmap levels.
+- [✅] 2. **Remedial Deep Dive:** AI-generated intensive review modules for failed milestones.
+- [✅] 3. **Adaptive Branching (Pass):** Seamless level-up to advanced topics upon passing (>= 80%).
+- [✅] 4. **Adaptive Branching (Fail):** Remedial status with specific tutor feedback and targeted lessons.
+
 # IELTS Examiner Section Implementation
 Progress: 8/8 ✅ **COMPLETE!**
+
 
 ## Implemented:
 - [✅] 1. `/dashboard/examiner/` - Full AI IELTS simulator (Academic/General)

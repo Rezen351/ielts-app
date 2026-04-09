@@ -57,14 +57,23 @@ export async function POST(request: Request) {
         "feedback": "Encouraging overall feedback message.",
         "weakPoints": [
           { "topic": "Topic Title", "suggestion": "Specific improvement advice" }
-        ]
+        ],
+        "remedialTitle": "A concise title for a remedial deep dive topic (e.g., 'Remedial: Grammar & Cohesion Focus')"
       }`;
       
       const userPrompt = `Analyze failures for topics: ${uniqueWeaknesses.join(', ')}.`;
       const aiResponse = await generateWithRetry(systemPrompt, userPrompt, { deployment: DEPLOYMENT_MINI });
       
-      // Convert AI response to a nice string for storage or just store JSON
       roadmap.masteryAnalysis = JSON.stringify(aiResponse);
+
+      // Create a remedial topic in the roadmap
+      const remedialTopicId = `remedial-${Date.now()}`;
+      roadmap.topics.push({
+        topicId: remedialTopicId,
+        title: aiResponse.remedialTitle || 'Remedial Deep Dive',
+        status: 'Available',
+        order: roadmap.topics.length + 1
+      });
     }
 
     roadmap.lastUpdated = new Date();

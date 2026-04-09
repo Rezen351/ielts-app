@@ -18,8 +18,7 @@ export async function GET(request: Request) {
     let material = await LearningMaterial.findOne({ topicId });
     
     if (!material) {
-      // Generate using AI if not exists
-      const systemPrompt = `You are an expert IELTS Tutor. Generate a comprehensive, high-engagement learning material in a "Blog Article" style.
+      let systemPrompt = `You are an expert IELTS Tutor. Generate a comprehensive, high-engagement learning material in a "Blog Article" style.
       
       CRITICAL FORMATTING RULES:
       1. Use Markdown for content: **bold** for key terms, *italics* for emphasis.
@@ -54,7 +53,34 @@ export async function GET(request: Request) {
         ]
       }`;
 
-      const userPrompt = `Generate a detailed learning module for the topic: "${topicId}". Ensure it is educational, encouraging, and follows official IELTS standards.`;
+      let userPrompt = `Generate a detailed learning module for the topic: "${topicId}". Ensure it is educational, encouraging, and follows official IELTS standards.`;
+
+      // Special handling for remedial topics
+      if (topicId.startsWith('remedial-')) {
+        const { UserRoadmap } = await import('@/models/Learning');
+        const roadmap = await UserRoadmap.findOne({ 'topics.topicId': topicId });
+        
+        if (roadmap && roadmap.masteryAnalysis) {
+          const analysis = JSON.parse(roadmap.masteryAnalysis);
+          systemPrompt = `You are an expert IELTS Tutor. Generate a "REMEDIAL DEEP DIVE" module for a student who failed their milestone assessment.
+          
+          THE FOCUS IS ON THESE WEAKNESSES:
+          ${analysis.weakPoints.map((wp: any) => `- ${wp.topic}: ${wp.suggestion}`).join('\n')}
+
+          Your goal is to provide a deep, intensive review of these specific areas. Combine them into a cohesive, high-impact lesson.
+          
+          CRITICAL FORMATTING RULES:
+          1. Use Markdown for content: **bold** for key terms, *italics* for emphasis.
+          2. Use Markdown Tables for comparisons, word lists, or synonyms.
+          3. Use Bullet points and Numbered lists for strategies or steps.
+          4. Ensure sections are substantial and educational.
+
+          Return ONLY a JSON object with the same structure as before.`;
+          
+          userPrompt = `Generate a remedial deep dive for: ${analysis.remedialTitle || 'Specialized Review'}. 
+          Reference the previous weaknesses and provide advanced strategies to overcome them.`;
+        }
+      }
       
       const validator = (data: any) => {
         const validCategories = ['Writing', 'Speaking', 'Reading', 'Listening', 'Grammar', 'Vocabulary'];

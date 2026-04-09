@@ -386,12 +386,12 @@ export default function LearningDashboard() {
                     </h4>
                     {(() => {
                       try {
-                        const analysis = JSON.parse(roadmap.masteryAnalysis);
+                        const analysis = typeof roadmap.masteryAnalysis === 'string' ? JSON.parse(roadmap.masteryAnalysis) : roadmap.masteryAnalysis;
                         return (
                           <div className="space-y-4">
                             <p className="text-orange-50 font-medium italic">"{analysis.feedback}"</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                              {analysis.weakPoints.map((wp: any, i: number) => (
+                              {analysis.weakPoints?.map((wp: any, i: number) => (
                                 <div key={i} className="bg-white/10 p-4 rounded-xl border border-white/10">
                                   <div className="text-[10px] font-black uppercase tracking-widest text-amber-200 mb-1">{wp.topic}</div>
                                   <p className="text-xs font-bold leading-relaxed">{wp.suggestion}</p>
@@ -406,14 +406,33 @@ export default function LearningDashboard() {
                     })()}
                   </div>
                   <div className="flex flex-col md:flex-row gap-4">
-                    <Button 
-                      onClick={handleStartMilestone}
-                      disabled={generatingMilestone}
-                      className="bg-white text-orange-600 hover:bg-orange-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-orange-900/20 group"
-                    >
-                      <RefreshCcw className="mr-2 w-6 h-6 transition-transform group-hover:rotate-180 duration-500" />
-                      {generatingMilestone ? "Preparing..." : "Try Milestone Again"}
-                    </Button>
+                    {(() => {
+                      const remedialTopic = [...roadmap.topics].reverse().find((t: any) => t.topicId.startsWith('remedial-'));
+                      if (remedialTopic && remedialTopic.status !== 'Completed') {
+                        return (
+                          <Button 
+                            asChild
+                            className="bg-white text-orange-600 hover:bg-orange-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-orange-900/20"
+                          >
+                            <Link href={`/dashboard/learning/${remedialTopic.topicId}`}>
+                              <BookOpen className="mr-2 w-6 h-6" />
+                              Take Remedial Lesson
+                            </Link>
+                          </Button>
+                        );
+                      } else {
+                        return (
+                          <Button 
+                            onClick={handleStartMilestone}
+                            disabled={generatingMilestone}
+                            className="bg-white text-orange-600 hover:bg-orange-50 rounded-2xl h-16 px-10 font-black text-xl shadow-xl shadow-orange-900/20 group"
+                          >
+                            <RefreshCcw className="mr-2 w-6 h-6 transition-transform group-hover:rotate-180 duration-500" />
+                            {generatingMilestone ? "Preparing..." : "Try Milestone Again"}
+                          </Button>
+                        );
+                      }
+                    })()}
                     <Button 
                       variant="ghost"
                       onClick={() => {
@@ -422,7 +441,7 @@ export default function LearningDashboard() {
                       }}
                       className="text-white hover:bg-white/10 rounded-2xl h-16 px-8 font-bold border border-white/20"
                     >
-                      Review Completed Topics
+                      Review Previous Topics
                     </Button>
                   </div>
                 </CardContent>
