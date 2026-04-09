@@ -28,6 +28,7 @@ export default function MaterialPage() {
   
   const [material, setMaterial] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [nextTopicId, setNextTopicId] = useState<string | null>(null);
@@ -44,18 +45,22 @@ export default function MaterialPage() {
     setIsFinishedAll(false);
   }, [topicId]);
 
-  const fetchMaterial = async () => {
-    setLoading(true);
+  const fetchMaterial = async (force = false) => {
+    if (force) setRegenerating(true);
+    else setLoading(true);
+
     try {
-      const res = await fetch(`/api/generate/learning?topicId=${topicId}`);
+      const res = await fetch(`/api/generate/learning?topicId=${topicId}${force ? '&force=true' : ''}`);
       const data = await res.json();
       if (data.success) {
         setMaterial(data.material);
+        if (force) toast.success("Content regenerated!", { description: "The material has been refreshed with new AI content." });
       }
     } catch (err) {
-      toast.error("Failed to load material");
+      toast.error(force ? "Failed to regenerate" : "Failed to load material");
     } finally {
       setLoading(false);
+      setRegenerating(false);
     }
   };
 
@@ -148,14 +153,26 @@ export default function MaterialPage() {
         </div>
       )}
 
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex items-center gap-6 sticky top-0 z-20">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/learning')} className="rounded-full">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex flex-col">
-          <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{material.category} • {material.difficultyLevel}</div>
-          <h1 className="text-lg font-bold text-slate-900">{material.title}</h1>
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
+        <div className="flex items-center gap-6">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard/learning')} className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex flex-col">
+            <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{material.category} • {material.difficultyLevel}</div>
+            <h1 className="text-lg font-bold text-slate-900">{material.title}</h1>
+          </div>
         </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => fetchMaterial(true)} 
+          disabled={regenerating}
+          className="rounded-xl border-slate-200 text-slate-600 font-bold text-xs gap-2"
+        >
+          <RotateCcw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+          {regenerating ? "Regenerating..." : "Regenerate Content"}
+        </Button>
       </header>
 
       <main className="flex-1 p-4 md:p-12 max-w-4xl mx-auto w-full space-y-12 md:space-y-16 pb-32">

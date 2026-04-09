@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const topicId = searchParams.get('topicId');
+    const force = searchParams.get('force') === 'true';
 
     if (!topicId) {
       return NextResponse.json({ message: 'Topic ID is required' }, { status: 400 });
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     // Check if material already exists in DB
     let material = await LearningMaterial.findOne({ topicId });
     
-    if (!material) {
+    if (!material || force) {
       let systemPrompt = `You are an expert IELTS Tutor. Generate a comprehensive, high-engagement learning material in a "Blog Article" style.
       
       CRITICAL FORMATTING RULES:
@@ -97,10 +98,19 @@ export async function GET(request: Request) {
 
       const aiResponse = await generateWithRetry(systemPrompt, userPrompt, { validator });
       
-      material = await LearningMaterial.create({
-        topicId,
-        ...aiResponse
-      });
+      if (material) {
+        // Use findOneAndReplace or findOneAndUpdate to update existing material
+        material = await LearningMaterial.findOneAndUpdate(
+          { topicId },
+          { ...aiResponse },
+          { new: true, upsert: true }
+        );
+      } else {
+        material = await LearningMaterial.create({
+          topicId,
+          ...aiResponse
+        });
+      }
     }
 
     return NextResponse.json({ success: true, material });
