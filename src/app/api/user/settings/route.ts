@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { userId, name, email, nativeLanguage, hobbies, occupation, goalBand } = await request.json();
+    const { userId, name, email, nativeLanguage, hobbies, occupation, goalBand, settings } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
@@ -44,16 +44,22 @@ export async function POST(request: Request) {
       }
     }
 
+    const updateData: any = { 
+      name,
+      email,
+      nativeLanguage,
+      hobbies: Array.isArray(hobbies) ? hobbies : (hobbies ? hobbies.split(',').map((h: string) => h.trim()) : []),
+      occupation,
+      goalBand: Number(goalBand) || 7.0
+    };
+
+    if (settings) {
+      updateData.settings = settings;
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { 
-        name,
-        email,
-        nativeLanguage,
-        hobbies: Array.isArray(hobbies) ? hobbies : (hobbies ? hobbies.split(',').map((h: string) => h.trim()) : []),
-        occupation,
-        goalBand: Number(goalBand) || 7.0
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 

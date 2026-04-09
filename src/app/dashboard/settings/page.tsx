@@ -27,6 +27,8 @@ export default function SettingsPage() {
   const [occupation, setOccupation] = useState('Student');
   const [hobbies, setHobbies] = useState('');
   const [goalBand, setGoalBand] = useState('7.0');
+  const [showCheckWrite, setShowCheckWrite] = useState(true);
+  const [showEnglishCheck, setShowEnglishCheck] = useState(true);
   const [loading, setLoading] = useState(false);
 
   // Password Change States
@@ -58,6 +60,10 @@ export default function SettingsPage() {
         setHobbies(Array.isArray(user.hobbies) ? user.hobbies.join(', ') : (user.hobbies || ''));
         const band = user.goalBand ? Number(user.goalBand).toFixed(1) : '7.0';
         setGoalBand(band);
+        if (user.settings) {
+          setShowCheckWrite(user.settings.showCheckWrite !== false);
+          setShowEnglishCheck(user.settings.showEnglishCheck !== false);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch user settings");
@@ -85,7 +91,11 @@ export default function SettingsPage() {
           nativeLanguage: nativeLang,
           occupation,
           hobbies,
-          goalBand: parseFloat(goalBand)
+          goalBand: parseFloat(goalBand),
+          settings: {
+            showCheckWrite,
+            showEnglishCheck
+          }
         }),
       });
 
@@ -103,7 +113,8 @@ export default function SettingsPage() {
           nativeLanguage: data.user.nativeLanguage,
           occupation: data.user.occupation,
           hobbies: data.user.hobbies,
-          goalBand: data.user.goalBand
+          goalBand: data.user.goalBand,
+          settings: data.user.settings
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
         setUser(data.user);
@@ -180,6 +191,45 @@ export default function SettingsPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8 max-w-2xl mx-auto w-full space-y-8 pb-20">
+        <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
+          <CardHeader className="p-8 pb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Settings className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-xl font-bold text-slate-900">Dashboard Features</CardTitle>
+            </div>
+            <CardDescription className="text-slate-500 font-medium">
+              Enable or disable specific features on your dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-4 space-y-6">
+            <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30">
+              <div className="space-y-0.5">
+                <label className="text-sm font-bold text-slate-800">Check Write</label>
+                <p className="text-xs text-slate-500">Practice writing 1-2 sentences on your dashboard.</p>
+              </div>
+              <button 
+                onClick={() => setShowCheckWrite(!showCheckWrite)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showCheckWrite ? 'bg-blue-600' : 'bg-slate-200'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showCheckWrite ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/30">
+              <div className="space-y-0.5">
+                <label className="text-sm font-bold text-slate-800">English Vibe Check</label>
+                <p className="text-xs text-slate-500">Daily dynamic vocabulary and grammar insights.</p>
+              </div>
+              <button 
+                onClick={() => setShowEnglishCheck(!showEnglishCheck)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showEnglishCheck ? 'bg-blue-600' : 'bg-slate-200'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showEnglishCheck ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-slate-200 shadow-none rounded-[32px] overflow-hidden bg-white">
           <CardHeader className="p-8 pb-4">
             <div className="flex items-center gap-3 mb-2">

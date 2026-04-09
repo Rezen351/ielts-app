@@ -8,6 +8,10 @@ export interface IUser extends mongoose.Document {
   hobbies: string[];
   occupation: string;
   goalBand: number;
+  settings?: {
+    showCheckWrite: boolean;
+    showEnglishCheck: boolean;
+  };
   progress: {
     [module: string]: {
       difficulty: 'Easy' | 'Medium' | 'Hard';
@@ -51,6 +55,10 @@ const UserSchema = new mongoose.Schema<IUser>({
   goalBand: {
     type: Number,
     default: 7.0,
+  },
+  settings: {
+    showCheckWrite: { type: Boolean, default: true },
+    showEnglishCheck: { type: Boolean, default: true },
   },
   progress: {
     type: Map,
